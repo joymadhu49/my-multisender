@@ -6,30 +6,60 @@ const priceCache = new Map()
 const CACHE_DURATION = 60000
 
 export async function getNativePrice(coingeckoId = 'ethereum', currency = 'usd') {
-  const cacheKey = `${coingeckoId}-${currency}`
-  const cached = priceCache.get(cacheKey)
-
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.price
+  // Support fallback aliases for network ids (some coin ids change over time)
+  const ALIASES = {
+    'ethereum': ['ethereum'],
+    'matic-network': ['matic-network', 'polygon-pos', 'polygon', 'matic-token', 'matic'],
+    'polygon': ['polygon-pos', 'matic-network', 'polygon', 'matic-token', 'matic'],
+    'binance-smart-chain': ['binancecoin', 'binance-smart-chain', 'binance-token']
   }
 
-  try {
-    const response = await fetch(
-      `${COINGECKO_API}/simple/price?ids=${coingeckoId}&vs_currencies=${currency}`
-    )
-    const data = await response.json()
-    const price = data[coingeckoId]?.[currency]
+  const tryIds = ALIASES[coingeckoId] || [coingeckoId]
 
-    if (!price) {
-      throw new Error(`Price not found for ${coingeckoId}`)
+  // Look in cache first for any of the candidate ids
+  for (const id of tryIds) {
+    const cacheKey = `${id}-${currency}`
+    const cached = priceCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return cached.price
     }
-
-    priceCache.set(cacheKey, { price, timestamp: Date.now() })
-    return price
-  } catch (error) {
-    console.error(`Failed to fetch ${coingeckoId} price:`, error)
-    throw new Error(`Failed to fetch ${coingeckoId} price from CoinGecko`)
   }
+
+  // Try each id until one returns a price
+  for (const id of tryIds) {
+    try {
+      const resp = await fetch(`${COINGECKO_API}/simple/price?ids=${id}&vs_currencies=${currency}`)
+      if (!resp.ok) continue
+      const data = await resp.json()
+      const price = data[id]?.[currency]
+      if (price || price === 0) {
+        priceCache.set(`${id}-${currency}`, { price, timestamp: Date.now() })
+        return price
+      }
+    } catch (err) {
+      // ignore and try next alias
+      console.warn(`CoinGecko lookup failed for ${id}:`, err)
+      continue
+    }
+  }
+
+  // Fallback: try markets endpoint for the first id
+  try {
+    const primary = tryIds[0]
+    const resp = await fetch(`${COINGECKO_API}/coins/markets?vs_currency=${currency}&ids=${primary}`)
+    if (resp.ok) {
+      const arr = await resp.json()
+      const price = arr?.[0]?.current_price
+      if (price || price === 0) {
+        priceCache.set(`${primary}-${currency}`, { price, timestamp: Date.now() })
+        return price
+      }
+    }
+  } catch (err) {
+    console.warn('CoinGecko markets fallback failed:', err)
+  }
+
+  throw new Error(`Price not found for ${coingeckoId}`)
 }
 
 // Backward compatibility alias
@@ -41,7 +71,7 @@ export async function getEthPrice(currency = 'usd') {
 const COINGECKO_PLATFORMS = {
   1: 'ethereum',           // Ethereum
   56: 'binance-smart-chain', // BNB Chain
-  137: 'polygon',          // Polygon
+  137: 'polygon-pos',      // Polygon (CoinGecko platform id is 'polygon-pos')
   42161: 'arbitrum-one',   // Arbitrum
   10: 'optimistic-ethereum', // Optimism
   8453: 'base',            // Base

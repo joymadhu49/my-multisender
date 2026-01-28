@@ -265,6 +265,8 @@ function App() {
   // Fetch native token price when chainId changes
   useEffect(() => {
     if (chainId) {
+      // Clear previous native price to avoid showing stale prices from another network
+      setEthPrice(null)
       fetchNativePrice(chainId)
       // Clear old token price and info when switching networks
       setTokenPrice(null)
@@ -279,6 +281,8 @@ function App() {
       setEthPrice(price)
     } catch (err) {
       console.error('Failed to fetch native token price:', err)
+      // Ensure we don't keep a previous network's price when fetch fails
+      setEthPrice(null)
     }
   }
 
