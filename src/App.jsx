@@ -265,6 +265,8 @@ function App() {
   // Fetch native token price when chainId changes
   useEffect(() => {
     if (chainId) {
+      // Clear previous native price to avoid showing stale prices from another network
+      setEthPrice(null)
       fetchNativePrice(chainId)
       // Clear old token price and info when switching networks
       setTokenPrice(null)
@@ -275,10 +277,26 @@ function App() {
   const fetchNativePrice = async (networkChainId) => {
     try {
       const config = NETWORK_CONFIG[Number(networkChainId)] || { coingeckoId: 'ethereum' }
-      const price = await getNativePrice(config.coingeckoId)
+      // Pass chainId as third arg so priceApi can try wrapped-native fallback when needed
+      const price = await getNativePrice(config.coingeckoId, 'usd', networkChainId)
       setEthPrice(price)
     } catch (err) {
       console.error('Failed to fetch native token price:', err)
+      // Ensure we don't keep a previous network's price when fetch fails
+      // Fallback: for Polygon, try WMATIC token price via token price endpoint
+      if (Number(networkChainId) === 137) {
+        try {
+          const WMATIC = '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270'
+          const tokenPrice = await getTokenPrice(WMATIC, 137)
+          if (tokenPrice) {
+            setEthPrice(tokenPrice)
+            return
+          }
+        } catch (e) {
+          console.warn('WMATIC fallback failed:', e)
+        }
+      }
+      setEthPrice(null)
     }
   }
 
