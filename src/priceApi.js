@@ -6,12 +6,18 @@ const priceCache = new Map()
 const CACHE_DURATION = 60000
 
 export async function getNativePrice(coingeckoId = 'ethereum', currency = 'usd') {
+  // New behavior: accept optional third parameter `chainId` by passing it through
+  // Note: callers may pass a chainId as the 3rd arg; we support that below.
+  const args = Array.from(arguments)
+  const chainId = args.length >= 3 ? args[2] : null
+
   // Support fallback aliases for network ids (some coin ids change over time)
   const ALIASES = {
     'ethereum': ['ethereum'],
     'matic-network': ['matic-network', 'polygon-pos', 'polygon', 'matic-token', 'matic'],
     'polygon': ['polygon-pos', 'matic-network', 'polygon', 'matic-token', 'matic'],
-    'binance-smart-chain': ['binancecoin', 'binance-smart-chain', 'binance-token']
+    'binancecoin': ['binancecoin', 'binance-smart-chain'],
+    'binance-smart-chain': ['binancecoin', 'binance-smart-chain']
   }
 
   const tryIds = ALIASES[coingeckoId] || [coingeckoId]
@@ -25,7 +31,7 @@ export async function getNativePrice(coingeckoId = 'ethereum', currency = 'usd')
     }
   }
 
-  // Try each id until one returns a price
+  // Try coin simple price for each alias
   for (const id of tryIds) {
     try {
       const resp = await fetch(`${COINGECKO_API}/simple/price?ids=${id}&vs_currencies=${currency}`)
@@ -37,13 +43,37 @@ export async function getNativePrice(coingeckoId = 'ethereum', currency = 'usd')
         return price
       }
     } catch (err) {
-      // ignore and try next alias
       console.warn(`CoinGecko lookup failed for ${id}:`, err)
       continue
     }
   }
 
-  // Fallback: try markets endpoint for the first id
+  // If coin-based lookups fail, and we have a chainId, try wrapped native token price on that chain
+  // This is often more reliable for chain-native USD pricing
+  const WRAPPED_NATIVE = {
+    1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+    56: '0xBB4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
+    137: '0x0d500B1d8E8eF31E21C99d1Db9a6444d3ADf1270', // WMATIC
+    42161: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1', // WETH Arbitrum
+    10: '0x4200000000000000000000000000000000000006', // Optimism WETH (canonical)
+    8453: null // Base fallback left null (CoinGecko should have 'base' coin id)
+  }
+
+  if (chainId && WRAPPED_NATIVE[Number(chainId)]) {
+    try {
+      const wrappedAddr = WRAPPED_NATIVE[Number(chainId)]
+      const tokenPrice = await getTokenPrice(wrappedAddr, Number(chainId), currency)
+      if (tokenPrice) {
+        // Cache under the original coingeckoId for short time so subsequent reads use it
+        priceCache.set(`${coingeckoId}-${currency}`, { price: tokenPrice, timestamp: Date.now() })
+        return tokenPrice
+      }
+    } catch (err) {
+      console.warn('Wrapped native token fallback failed:', err)
+    }
+  }
+
+  // As a last resort try markets endpoint for first alias
   try {
     const primary = tryIds[0]
     const resp = await fetch(`${COINGECKO_API}/coins/markets?vs_currency=${currency}&ids=${primary}`)
@@ -101,8 +131,9 @@ export async function getTokenPrice(contractAddress, chainId = 1, currency = 'us
     const data = await response.json()
     const price = data[contractAddress.toLowerCase()]?.[currency]
 
-    if (!price || price === 0) {
+  if (!price || price === 0) {
       console.warn(`Price not found for token ${contractAddress} on ${platform}`)
+      // Some tokens (like wrapped native tokens) may be indexed under different ids
       return null
     }
 

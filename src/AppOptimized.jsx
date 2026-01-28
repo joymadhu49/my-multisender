@@ -71,7 +71,8 @@ function AppOptimized() {
   // Fetch native token price
   useEffect(() => {
     if (wallet.chainId && wallet.networkConfig) {
-      getNativePrice(wallet.networkConfig.coingeckoId)
+      // pass chainId so priceApi can use wrapped-native fallback if needed
+      getNativePrice(wallet.networkConfig.coingeckoId, 'usd', wallet.chainId)
         .then(setEthPrice)
         .catch(console.error);
     }

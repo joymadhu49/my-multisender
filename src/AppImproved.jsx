@@ -385,7 +385,7 @@ function AppImproved() {
   const fetchNativePrice = async (networkChainId) => {
     try {
       const config = NETWORK_CONFIG[Number(networkChainId)] || { coingeckoId: 'ethereum' }
-      const price = await getNativePrice(config.coingeckoId)
+      const price = await getNativePrice(config.coingeckoId, 'usd', networkChainId)
       setEthPrice(price)
     } catch (err) {
       console.error('Failed to fetch native token price:', err)
