@@ -164,7 +164,7 @@ function App() {
     1: { name: 'Ethereum', symbol: 'ETH', explorer: 'https://etherscan.io', coingeckoId: 'ethereum', logo: 'ethereum' },
     56: { name: 'BNB Chain', symbol: 'BNB', explorer: 'https://bscscan.com', coingeckoId: 'binancecoin', logo: 'bnb' },
     8453: { name: 'Base', symbol: 'ETH', explorer: 'https://basescan.org', coingeckoId: 'ethereum', logo: 'base' },
-    137: { name: 'Polygon', symbol: 'MATIC', explorer: 'https://polygonscan.com', coingeckoId: 'matic-network', logo: 'polygon' },
+    137: { name: 'Polygon', symbol: 'POL', explorer: 'https://polygonscan.com', coingeckoId: 'polygon-ecosystem-token', logo: 'polygon' },
     42161: { name: 'Arbitrum', symbol: 'ETH', explorer: 'https://arbiscan.io', coingeckoId: 'ethereum', logo: 'arbitrum' },
     10: { name: 'Optimism', symbol: 'ETH', explorer: 'https://optimistic.etherscan.io', coingeckoId: 'ethereum', logo: 'optimism' },
     11155111: { name: 'Sepolia', symbol: 'ETH', explorer: 'https://sepolia.etherscan.io', coingeckoId: 'ethereum', logo: 'sepolia' },

@@ -18,20 +18,18 @@ const rpcMap = {
 let wcProvider = null
 let wcModal = null
 let currentProvider = null
-let connectionType = null // 'injected' or 'walletconnect'
+let connectionType = null
 
-// Device detection
 export const isDesktop = () => {
   if (typeof window === 'undefined') return true
   return !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 }
 
-export const isIOS = () => {
+export const isMobile = () => {
   if (typeof window === 'undefined') return false
-  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 }
 
-// Get injected provider (MetaMask, Brave, etc.)
 export const getInjectedProvider = () => {
   if (typeof window !== 'undefined' && window.ethereum) {
     return window.ethereum
@@ -39,7 +37,6 @@ export const getInjectedProvider = () => {
   return null
 }
 
-// Initialize WalletConnect
 export const initWalletConnect = async () => {
   if (wcProvider && wcModal) {
     return { provider: wcProvider, modal: wcModal }
@@ -51,11 +48,14 @@ export const initWalletConnect = async () => {
       chains: chains,
       rpcMap: rpcMap,
       optionalChains: chains,
+      showQrModal: false,
+      methods: ['eth_sendTransaction', 'eth_sign', 'personal_sign', 'eth_signTypedData'],
+      events: ['chainChanged', 'accountsChanged'],
       metadata: {
         name: 'MultiSend',
         description: 'Send crypto to multiple wallets',
-        url: typeof window !== 'undefined' ? window.location.href : '',
-        icons: ['/logo.png']
+        url: typeof window !== 'undefined' ? window.location.origin : '',
+        icons: [typeof window !== 'undefined' ? `${window.location.origin}/logo.png` : '/logo.png']
       }
     })
 
@@ -71,7 +71,6 @@ export const initWalletConnect = async () => {
   }
 }
 
-// Connect injected wallet (MetaMask, Brave, etc.) - PC
 export const connectInjected = async () => {
   const injected = getInjectedProvider()
   if (!injected) {
@@ -92,37 +91,43 @@ export const connectInjected = async () => {
   }
 }
 
-// Connect WalletConnect - Mobile or desktop with QR
 export const connectWalletConnect = async () => {
   try {
     const { provider: wcProv, modal: wcMod } = await initWalletConnect()
 
-    // Open the modal
-    await wcMod.openModal()
+    const uri = await new Promise((resolve) => {
+      wcProv.on('display_uri', (uri) => {
+        resolve(uri)
+      })
+      wcProv.enable()
+    })
 
-    // Wait for connection
+    await wcMod.openModal({ uri })
+
     return new Promise((resolve, reject) => {
-      const handleConnect = () => {
-        wcProv?.removeEventListener('connect', handleConnect)
-        wcProv?.removeEventListener('error', handleError)
+      const handleConnect = (payload) => {
+        wcProv.removeListener('connect', handleConnect)
+        wcProv.removeListener('disconnect', handleDisconnect)
         currentProvider = wcProv
         connectionType = 'walletconnect'
+        wcMod.closeModal()
         resolve(wcProv)
       }
 
-      const handleError = (error) => {
-        wcProv?.removeEventListener('connect', handleConnect)
-        wcProv?.removeEventListener('error', handleError)
-        reject(error)
+      const handleDisconnect = () => {
+        wcProv.removeListener('connect', handleConnect)
+        wcProv.removeListener('disconnect', handleDisconnect)
+        wcMod.closeModal()
+        reject(new Error('Connection cancelled'))
       }
 
-      wcProv?.on('connect', handleConnect)
-      wcProv?.on('error', handleError)
+      wcProv.on('connect', handleConnect)
+      wcProv.on('disconnect', handleDisconnect)
 
-      // Timeout after 5 minutes
       setTimeout(() => {
-        wcProv?.removeEventListener('connect', handleConnect)
-        wcProv?.removeEventListener('error', handleError)
+        wcProv.removeListener('connect', handleConnect)
+        wcProv.removeListener('disconnect', handleDisconnect)
+        wcMod.closeModal()
         reject(new Error('Connection timeout'))
       }, 300000)
     })
@@ -132,11 +137,7 @@ export const connectWalletConnect = async () => {
   }
 }
 
-// Unified connect function - auto-detects and routes appropriately
 export const connectWallet = async () => {
-  // On desktop: try injected first, fallback to WalletConnect
-  // On mobile: use WalletConnect
-  
   if (isDesktop()) {
     const injected = getInjectedProvider()
     if (injected) {
@@ -149,20 +150,17 @@ export const connectWallet = async () => {
     }
     return await connectWalletConnect()
   } else {
-    // Mobile: use WalletConnect
     return await connectWalletConnect()
   }
 }
 
-// Disconnect wallet
 export const disconnectWallet = async () => {
   try {
-    // Close the modal if it's open
     if (wcModal) {
       try {
         wcModal.closeModal()
       } catch (e) {
-        // Modal might not have closeModal method, ignore
+        // ignore
       }
     }
     
@@ -170,14 +168,12 @@ export const disconnectWallet = async () => {
       await wcProvider.disconnect()
     }
     
-    // Reset WalletConnect instances so they can be re-initialized
     wcProvider = null
     wcModal = null
     currentProvider = null
     connectionType = null
   } catch (error) {
     console.error('Disconnect failed:', error)
-    // Force cleanup even if disconnect fails
     wcProvider = null
     wcModal = null
     currentProvider = null
@@ -185,17 +181,14 @@ export const disconnectWallet = async () => {
   }
 }
 
-// Get current provider
 export const getProvider = () => {
   return currentProvider
 }
 
-// Get connection type
 export const getConnectionType = () => {
   return connectionType
 }
 
-// Check if wallet is connected
 export const isWalletConnected = () => {
   return currentProvider !== null
 }

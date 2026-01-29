@@ -46,9 +46,9 @@ export const APP_CONFIG = {
     },
     137: { 
       name: 'Polygon', 
-      symbol: 'MATIC', 
+      symbol: 'POL', 
       explorer: 'https://polygonscan.com', 
-      coingeckoId: 'matic-network', 
+      coingeckoId: 'polygon-ecosystem-token', 
       logo: 'polygon',
       rpcUrl: 'https://polygon-rpc.com'
     },
