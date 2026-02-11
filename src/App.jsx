@@ -891,6 +891,58 @@ function App() {
       <main className="main">
         {!account ? (
           <div className="connect-section">
+            {/* Left Panel - Why MultiSend */}
+            <div className="homepage-panel homepage-panel-left">
+              <div className="homepage-panel-header">Why MultiSend?</div>
+              <div className="homepage-benefit">
+                <div className="homepage-benefit-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                  </svg>
+                </div>
+                <div>
+                  <strong>Save Up to 80% on Gas</strong>
+                  <p>Batch hundreds of transfers into one transaction. Stop wasting ETH on repeated gas fees.</p>
+                </div>
+              </div>
+              <div className="homepage-benefit">
+                <div className="homepage-benefit-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/>
+                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                  </svg>
+                </div>
+                <div>
+                  <strong>100% Non-Custodial</strong>
+                  <p>Your tokens go directly from your wallet to recipients. We never hold your funds.</p>
+                </div>
+              </div>
+              <div className="homepage-benefit">
+                <div className="homepage-benefit-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+                  </svg>
+                </div>
+                <div>
+                  <strong>Multi-Chain Support</strong>
+                  <p>Works on Ethereum, Base, BNB Chain, Polygon, Arbitrum, and Optimism.</p>
+                </div>
+              </div>
+              <div className="homepage-benefit">
+                <div className="homepage-benefit-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                  </svg>
+                </div>
+                <div>
+                  <strong>USD Pricing Mode</strong>
+                  <p>Set amounts in USD and let MultiSend auto-convert to crypto at live rates.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Center - Connect Card */}
             <div className="connect-card">
               <div className="connect-icon">
                 <img src="/logo.png" alt="MultiSend" className="connect-logo-img" />
@@ -924,11 +976,44 @@ function App() {
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
                       <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M8 8.5C8 7.67 8.67 7 9.5 7H12v4H9.5C8.67 11 8 10.33 8 9.5v-1z" fill="currentColor" opacity="0.3"/>
-                      <path d="M12 11h2.5c.83 0 1.5.67 1.5 1.5v1c0 .83-.67 1.5-1.5 1.5H12v-4z" fill="currentColor" opacity="0.3"/>
                     </svg>
                   </div>
                   <span>USD Pricing</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Panel - Perfect For */}
+            <div className="homepage-panel homepage-panel-right">
+              <div className="homepage-panel-header">Perfect For</div>
+              <div className="homepage-usecase">
+                <span className="homepage-usecase-tag">Airdrops</span>
+                <p>Distribute tokens to thousands of community members in minutes, not hours.</p>
+              </div>
+              <div className="homepage-usecase">
+                <span className="homepage-usecase-tag">Payroll</span>
+                <p>Pay your entire team in one click. Supports ETH and any ERC20 token.</p>
+              </div>
+              <div className="homepage-usecase">
+                <span className="homepage-usecase-tag">Rewards</span>
+                <p>Send staking rewards, bounties, or contest prizes to multiple winners at once.</p>
+              </div>
+              <div className="homepage-usecase">
+                <span className="homepage-usecase-tag">DAO Ops</span>
+                <p>Execute treasury distributions and grant payments with a single transaction.</p>
+              </div>
+              <div className="homepage-stats">
+                <div className="homepage-stat">
+                  <span className="homepage-stat-number">6</span>
+                  <span className="homepage-stat-label">Chains</span>
+                </div>
+                <div className="homepage-stat">
+                  <span className="homepage-stat-number">0%</span>
+                  <span className="homepage-stat-label">Fees</span>
+                </div>
+                <div className="homepage-stat">
+                  <span className="homepage-stat-number">1</span>
+                  <span className="homepage-stat-label">Click Send</span>
                 </div>
               </div>
             </div>
