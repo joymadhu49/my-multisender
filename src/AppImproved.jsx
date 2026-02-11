@@ -972,7 +972,7 @@ function AppImproved() {
         .input-amount:focus {
           outline: none;
           border-color: var(--accent);
-          box-shadow: 0 0 12px rgba(124, 58, 237, 0.2);
+          box-shadow: 0 0 12px rgba(30, 41, 59, 0.15);
         }
 
         .amount-input-row {
@@ -1078,7 +1078,7 @@ function AppImproved() {
 
         .btn-send:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 12px 24px rgba(124, 58, 237, 0.3);
+          box-shadow: 0 12px 24px rgba(30, 41, 59, 0.2);
         }
 
         .btn-send:disabled {

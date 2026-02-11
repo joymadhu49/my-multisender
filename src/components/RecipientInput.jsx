@@ -158,11 +158,11 @@ export function RecipientInput({
           border-color: var(--accent);
           box-shadow: 
             0 0 0 3px var(--accent-muted),
-            0 0 20px rgba(124, 58, 237, 0.2);
+            0 0 20px rgba(30, 41, 59, 0.15);
           background: linear-gradient(
             135deg,
             var(--bg-elevated) 0%,
-            rgba(124, 58, 237, 0.02) 100%
+            rgba(30, 41, 59, 0.02) 100%
           );
         }
 
@@ -220,9 +220,9 @@ export function RecipientInput({
           background: linear-gradient(
             135deg,
             var(--bg-surface) 0%,
-            rgba(124, 58, 237, 0.02) 100%
+            rgba(30, 41, 59, 0.02) 100%
           );
-          box-shadow: 0 0 12px rgba(124, 58, 237, 0.2);
+          box-shadow: 0 0 12px rgba(30, 41, 59, 0.15);
         }
 
         .quick-add-amount {
@@ -249,7 +249,7 @@ export function RecipientInput({
         .quick-add-button:hover:not(:disabled) {
           background: var(--accent-hover);
           transform: translateY(-2px);
-          box-shadow: 0 8px 16px rgba(124, 58, 237, 0.3);
+          box-shadow: 0 8px 16px rgba(30, 41, 59, 0.2);
         }
 
         .quick-add-button:disabled {

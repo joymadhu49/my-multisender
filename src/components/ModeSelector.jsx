@@ -137,9 +137,9 @@ export function ModeSelector({ activeMode = 'same', onChange }) {
           background: linear-gradient(
             135deg,
             var(--accent-muted) 0%,
-            rgba(124, 58, 237, 0.08) 100%
+            rgba(30, 41, 59, 0.05) 100%
           );
-          box-shadow: 0 0 20px rgba(124, 58, 237, 0.15);
+          box-shadow: 0 0 20px rgba(30, 41, 59, 0.1);
         }
 
         .mode-option-header {

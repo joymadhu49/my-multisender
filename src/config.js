@@ -94,14 +94,14 @@ export const THEME_CONFIG = {
     textTertiary: '#6e7891',
     textMuted: '#4a5568',
     
-    // Softer accent colors
-    accent: '#6366f1',
-    accentHover: '#5558e3',
-    accentMuted: 'rgba(99, 102, 241, 0.12)',
-    accentGlow: 'rgba(99, 102, 241, 0.25)',
+    // Dark charcoal accent
+    accent: '#1E293B',
+    accentHover: '#334155',
+    accentMuted: 'rgba(30, 41, 59, 0.12)',
+    accentGlow: 'rgba(30, 41, 59, 0.25)',
     
-    secondary: '#06b6d4',
-    secondaryMuted: 'rgba(6, 182, 212, 0.1)',
+    secondary: '#64748B',
+    secondaryMuted: 'rgba(100, 116, 139, 0.1)',
   },
   light: {
     bgBase: '#fafbfc',
@@ -114,13 +114,13 @@ export const THEME_CONFIG = {
     textTertiary: '#6e7781',
     textMuted: '#8b949e',
     
-    accent: '#6366f1',
-    accentHover: '#4f46e5',
-    accentMuted: 'rgba(99, 102, 241, 0.08)',
-    accentGlow: 'rgba(99, 102, 241, 0.15)',
+    accent: '#1E293B',
+    accentHover: '#334155',
+    accentMuted: 'rgba(30, 41, 59, 0.08)',
+    accentGlow: 'rgba(30, 41, 59, 0.15)',
     
-    secondary: '#0ea5e9',
-    secondaryMuted: 'rgba(14, 165, 233, 0.08)',
+    secondary: '#64748B',
+    secondaryMuted: 'rgba(100, 116, 139, 0.08)',
   }
 };
 

@@ -24,16 +24,16 @@
   --text-tertiary: #6b6b6b;
   --text-muted: #9a9a9a;
 
-  /* Modern gradient accent: Blue to Pink */
-  --accent: #7c3aed;
-  --accent-hover: #8b5cf6;
-  --accent-muted: rgba(124, 58, 237, 0.15);
-  --accent-glow: rgba(124, 58, 237, 0.4);
-  --accent-bright: #a78bfa;
+  /* Dark charcoal accent */
+  --accent: #1E293B;
+  --accent-hover: #334155;
+  --accent-muted: rgba(30, 41, 59, 0.08);
+  --accent-glow: rgba(30, 41, 59, 0.15);
+  --accent-bright: #475569;
 
-  /* Enhanced secondary accent: Gradient pink */
-  --secondary: #ec4899;
-  --secondary-muted: rgba(236, 72, 153, 0.1);
+  /* Slate secondary */
+  --secondary: #64748B;
+  --secondary-muted: rgba(100, 116, 139, 0.1);
 
   /* Enhanced semantic colors */
   --success: #00ff88;
@@ -46,14 +46,14 @@
   /* Clean borders */
   --border: #e0e0e0;
   --border-subtle: #f0f0f0;
-  --border-focus: rgba(99, 102, 241, 0.4);
+  --border-focus: rgba(30, 41, 59, 0.4);
 
   /* Clean gradients */
-  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  --gradient-primary: linear-gradient(135deg, #1E293B 0%, #334155 100%);
   --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(249, 250, 251, 1) 100%);
   --gradient-card: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
-  --gradient-glow: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
-  --gradient-accent: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  --gradient-glow: radial-gradient(ellipse at center, rgba(30, 41, 59, 0.1) 0%, transparent 70%);
+  --gradient-accent: linear-gradient(135deg, #1E293B 0%, #334155 100%);
   --gradient-bg: linear-gradient(180deg, #FDFBD4 0%, #f5f3c8 100%);
 
   /* Clean shadows */
@@ -65,7 +65,7 @@
     0 20px 25px -5px rgba(0, 0, 0, 0.08),
     0 10px 10px -5px rgba(0, 0, 0, 0.04);
   --shadow-glow:
-    0 0 15px rgba(99, 102, 241, 0.15);
+    0 0 15px rgba(30, 41, 59, 0.15);
   --shadow-card:
     0 0 0 1px rgba(0, 0, 0, 0.05),
     0 10px 25px -5px rgba(0, 0, 0, 0.06),
@@ -106,16 +106,16 @@
   --text-tertiary: #6b6b6b;
   --text-muted: #9a9a9a;
 
-  /* Light primary accent: Refined purple */
-  --accent: #6366f1;
-  --accent-hover: #4f46e5;
-  --accent-muted: rgba(99, 102, 241, 0.08);
-  --accent-glow: rgba(99, 102, 241, 0.15);
-  --accent-bright: #818cf8;
+  /* Light primary accent: Dark charcoal */
+  --accent: #1E293B;
+  --accent-hover: #334155;
+  --accent-muted: rgba(30, 41, 59, 0.08);
+  --accent-glow: rgba(30, 41, 59, 0.15);
+  --accent-bright: #475569;
 
-  /* Light secondary accent: Soft blue */
-  --secondary: #0ea5e9;
-  --secondary-muted: rgba(14, 165, 233, 0.08);
+  /* Light secondary accent: Slate */
+  --secondary: #64748B;
+  --secondary-muted: rgba(100, 116, 139, 0.08);
 
   /* Light semantic colors - Softer tones */
   --success: #22c55e;
@@ -128,14 +128,14 @@
   /* Light borders - Subtle gray */
   --border: #e5e7eb;
   --border-subtle: #f3f4f6;
-  --border-focus: rgba(99, 102, 241, 0.4);
+  --border-focus: rgba(30, 41, 59, 0.4);
 
   /* Light gradients - Clean and subtle */
-  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  --gradient-primary: linear-gradient(135deg, #1E293B 0%, #334155 100%);
   --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(249, 250, 251, 1) 100%);
   --gradient-card: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
-  --gradient-glow: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
-  --gradient-accent: linear-gradient(135deg, #6366f1 0%, #0ea5e9 100%);
+  --gradient-glow: radial-gradient(ellipse at center, rgba(30, 41, 59, 0.1) 0%, transparent 70%);
+  --gradient-accent: linear-gradient(135deg, #1E293B 0%, #475569 100%);
   --gradient-bg: linear-gradient(180deg, #fafbfc 0%, #f0f2f5 100%);
 
   /* Light shadows - Soft and elegant */
@@ -147,7 +147,7 @@
     0 20px 25px -5px rgba(0, 0, 0, 0.08),
     0 10px 10px -5px rgba(0, 0, 0, 0.04);
   --shadow-glow:
-    0 0 15px rgba(99, 102, 241, 0.15);
+    0 0 15px rgba(30, 41, 59, 0.15);
   --shadow-card:
     0 0 0 1px rgba(0, 0, 0, 0.05),
     0 10px 25px -5px rgba(0, 0, 0, 0.06),
@@ -276,8 +276,8 @@ body {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(102, 126, 234, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(118, 75, 162, 0.1) 1px, transparent 1px);
+    linear-gradient(rgba(30, 41, 59, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 41, 59, 0.06) 1px, transparent 1px);
   background-size: 80px 80px;
 }
 
@@ -313,25 +313,25 @@ body {
   position: absolute;
   width: 4px;
   height: 4px;
-  background: linear-gradient(45deg, #667eea, #764ba2);
+  background: linear-gradient(45deg, #1E293B, #475569);
   border-radius: 50%;
   box-shadow: 
-    0 0 20px rgba(102, 126, 234, 0.8),
-    0 0 40px rgba(118, 75, 162, 0.4);
+    0 0 20px rgba(30, 41, 59, 0.5),
+    0 0 40px rgba(30, 41, 59, 0.25);
 }
 
 .bg-particles::before {
   top: 20%;
   left: 10%;
   animation-delay: 0s;
-  background: linear-gradient(45deg, #667eea, #f093fb);
+  background: linear-gradient(45deg, #1E293B, #64748B);
 }
 
 .bg-particles::after {
   top: 60%;
   right: 10%;
   animation-delay: 10s;
-  background: linear-gradient(45deg, #764ba2, #4facfe);
+  background: linear-gradient(45deg, #334155, #64748B);
 }
 
 /* Create particle trails */
@@ -360,7 +360,7 @@ body {
 .orb-1 {
   width: 300px;
   height: 300px;
-  background: rgba(124, 58, 237, 0.3);
+  background: rgba(30, 41, 59, 0.2);
   top: -10%;
   left: -10%;
   animation-duration: 35s;
@@ -370,7 +370,7 @@ body {
 .orb-2 {
   width: 250px;
   height: 250px;
-  background: rgba(124, 58, 237, 0.2);
+  background: rgba(30, 41, 59, 0.15);
   top: 60%;
   right: -5%;
   animation-duration: 40s;
@@ -380,7 +380,7 @@ body {
 .orb-3 {
   width: 280px;
   height: 280px;
-  background: rgba(124, 58, 237, 0.25);
+  background: rgba(30, 41, 59, 0.18);
   bottom: -10%;
   left: 30%;
   animation-duration: 45s;
@@ -726,7 +726,7 @@ body {
 }
 
 .network-option.active .network-option-icon {
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+  box-shadow: 0 0 10px rgba(30, 41, 59, 0.3);
 }
 
 .network-option-name {
@@ -875,7 +875,7 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-left: 0.25em;
-  filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.5));
+  filter: drop-shadow(0 0 10px rgba(30, 41, 59, 0.3));
 }
 
 
@@ -2312,7 +2312,7 @@ body {
   border: 2px solid transparent;
   border-radius: 50%;
   background: linear-gradient(transparent, transparent),
-              linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+              linear-gradient(90deg, #1E293B, #334155, #475569);
   background-origin: border-box;
   background-clip: padding-box, border-box;
   position: relative;
@@ -2323,7 +2323,7 @@ body {
   position: absolute;
   inset: -2px;
   border-radius: 50%;
-  background: linear-gradient(45deg, #667eea, #764ba2, #f093fb);
+  background: linear-gradient(45deg, #1E293B, #334155, #475569);
   filter: blur(4px);
   opacity: 0.5;
 }
@@ -2697,7 +2697,7 @@ body {
   width: 44px;
   height: 44px;
   object-fit: contain;
-  filter: drop-shadow(0 0 10px rgba(180, 41, 249, 0.4));
+  filter: drop-shadow(0 0 10px rgba(30, 41, 59, 0.3));
 }
 
   .main {
@@ -3204,7 +3204,7 @@ body {
 }
 
 .hero-highlight {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1E293B 0%, #475569 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -3221,7 +3221,7 @@ body {
 .btn-hero {
   display: inline-block;
   padding: var(--space-4) var(--space-8);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
   color: white;
   font-size: 1rem;
   font-weight: 700;
@@ -3229,12 +3229,12 @@ body {
   cursor: pointer;
   letter-spacing: 0.02em;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 20px rgba(30, 41, 59, 0.3);
 }
 
 .btn-hero:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.45);
+  box-shadow: 0 8px 30px rgba(30, 41, 59, 0.45);
 }
 
 .btn-hero:disabled {
@@ -3373,7 +3373,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #1E293B, #334155);
   color: white;
   font-size: 0.75rem;
   font-weight: 700;
@@ -3531,7 +3531,7 @@ body {
 .cta-section {
   text-align: center;
   padding: var(--space-10) var(--space-6);
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08));
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.05), rgba(30, 41, 59, 0.03));
   border: 1px solid var(--border);
   margin-bottom: var(--space-8);
 }
