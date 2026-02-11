@@ -1460,12 +1460,12 @@ function App() {
             <div className="footer-col">
               <h4>Product</h4>
               <a href="https://etherscan.io/address/0x33b82Ad6f62332D6359e582b642466591A6a9DDA#code" target="_blank" rel="noopener noreferrer">Smart Contract</a>
-              <a href="https://github.com/joymadhu49/my-multisender" target="_blank" rel="noopener noreferrer">Documentation</a>
+              <a href="#how-it-works">Documentation</a>
             </div>
             <div className="footer-col">
               <h4>Community</h4>
               <a href="https://x.com/zx_joy_" target="_blank" rel="noopener noreferrer">Twitter</a>
-              <a href="https://github.com/joymadhu49/my-multisender" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href="https://x.com/zx_joy_" target="_blank" rel="noopener noreferrer">Discord</a>
             </div>
             <div className="footer-col">
               <h4>Legal</h4>
