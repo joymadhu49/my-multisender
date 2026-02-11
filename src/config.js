@@ -94,14 +94,14 @@ export const THEME_CONFIG = {
     textTertiary: '#6e7891',
     textMuted: '#4a5568',
     
-    // Dark charcoal accent
-    accent: '#1E293B',
-    accentHover: '#334155',
-    accentMuted: 'rgba(30, 41, 59, 0.12)',
-    accentGlow: 'rgba(30, 41, 59, 0.25)',
+    // Slate accent for dark mode
+    accent: '#94a3b8',
+    accentHover: '#cbd5e1',
+    accentMuted: 'rgba(148, 163, 184, 0.12)',
+    accentGlow: 'rgba(148, 163, 184, 0.25)',
     
     secondary: '#64748B',
-    secondaryMuted: 'rgba(100, 116, 139, 0.1)',
+    secondaryMuted: 'rgba(100, 116, 139, 0.15)',
   },
   light: {
     bgBase: '#fafbfc',
