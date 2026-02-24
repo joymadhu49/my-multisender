@@ -1448,8 +1448,8 @@ function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="footer-main">
+      {/* Footer - only on homepage */}
+      {!account && <footer className="footer-main">
         <div className="footer-top">
           <div className="footer-brand">
             <img src="/logo.png" alt="MultiSend" className="footer-logo" />
@@ -1477,7 +1477,7 @@ function App() {
         <div className="footer-bottom">
           <span>Made by <a href="https://x.com/zx_joy_" target="_blank" rel="noopener noreferrer">@zx_joy_</a></span>
         </div>
-      </footer>
+      </footer>}
     </div>
   )
 }
