@@ -1448,36 +1448,7 @@ function App() {
         )}
       </main>
 
-      {/* Footer - only on homepage */}
-      {!account && <footer className="footer-main">
-        <div className="footer-top">
-          <div className="footer-brand">
-            <img src="/logo.png" alt="MultiSend" className="footer-logo" />
-            <span className="footer-name">MultiSend</span>
-            <p className="footer-tagline">Batch token distribution for Web3</p>
-          </div>
-          <div className="footer-links">
-            <div className="footer-col">
-              <h4>Product</h4>
-              <a href="https://etherscan.io/address/0x33b82Ad6f62332D6359e582b642466591A6a9DDA#code" target="_blank" rel="noopener noreferrer">Smart Contract</a>
-              <a href="#how-it-works">Documentation</a>
-            </div>
-            <div className="footer-col">
-              <h4>Community</h4>
-              <a href="https://x.com/zx_joy_" target="_blank" rel="noopener noreferrer">Twitter</a>
-              <a href="https://x.com/zx_joy_" target="_blank" rel="noopener noreferrer">Discord</a>
-            </div>
-            <div className="footer-col">
-              <h4>Legal</h4>
-              <a href="#terms">Terms of Use</a>
-              <a href="#privacy">Privacy Policy</a>
-            </div>
-          </div>
-        </div>
-        <div className="footer-bottom">
-          <span>Made by <a href="https://x.com/zx_joy_" target="_blank" rel="noopener noreferrer">@zx_joy_</a></span>
-        </div>
-      </footer>}
+
     </div>
   )
 }
