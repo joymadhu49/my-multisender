@@ -3,6 +3,10 @@ import { ethers } from 'ethers'
 import { MULTISENDER_ADDRESSES, SUPPORTED_CHAINS, getContractAddress, MULTISENDER_ABI, ERC20_ABI } from './contract'
 import { getNativePrice, getTokenPrice } from './priceApi'
 import { initWalletConnect, connectWallet, disconnectWallet, getProvider } from './walletConnect'
+import SummaryBar from './components/SummaryBar'
+import ModeSelector from './components/ModeSelector'
+import RecipientInput from './components/RecipientInput'
+import ApprovalCard from './components/ApprovalCard'
 
 // Parse blockchain errors into user-friendly messages
 const parseError = (err) => {
@@ -592,6 +596,10 @@ function App() {
 
   const addQuickRecipient = () => {
     if (!quickAddAddress || !ethers.isAddress(quickAddAddress)) return
+    if (sendMode === 'custom') {
+      const amount = parseFloat(quickAddAmount)
+      if (!quickAddAmount || Number.isNaN(amount) || amount <= 0) return
+    }
 
     let newLine = quickAddAddress
     if (sendMode === 'custom' && quickAddAmount) {
@@ -606,6 +614,9 @@ function App() {
   const clearAll = () => {
     setRecipients('')
     setSameAmount('')
+    setQuickAddAddress('')
+    setQuickAddAmount('')
+    setParseWarnings({ invalid: 0, duplicates: 0 })
     setError(null)
     setSuccess(null)
   }
@@ -839,6 +850,59 @@ function App() {
   const symbol = activeTab === 'native' ? nativeSymbol : (tokenInfo?.symbol || 'tokens')
   const price = activeTab === 'native' ? ethPrice : tokenPrice
   const explorerUrl = networkConfig.explorer
+  const isQuickAddDisabled = !quickAddAddress || !ethers.isAddress(quickAddAddress) || (sendMode === 'custom' && (!quickAddAmount || Number(quickAddAmount) <= 0))
+  const heroStats = [
+    { value: `${liveStats.totalTx || 142}+`, label: 'Batched transfers' },
+    { value: `${liveStats.totalEth || 28.5}+`, label: 'Native tokens sent' },
+    { value: '7', label: 'Deployments live' },
+    { value: '0%', label: 'Platform fee' },
+  ]
+  const workflowSteps = [
+    {
+      step: '01',
+      title: 'Connect and pick an asset',
+      description: 'Bring in your wallet, choose the active network, and decide between native token or ERC20 payouts.',
+    },
+    {
+      step: '02',
+      title: 'Paste recipients or build them inline',
+      description: 'Use one address per line for equal payouts or address + amount pairs for custom distribution.',
+    },
+    {
+      step: '03',
+      title: 'Review totals and send once',
+      description: 'See approval state, recipient count, total value, and explorer details before submitting one transaction.',
+    },
+  ]
+  const featureCards = [
+    {
+      title: 'Review-first sending flow',
+      description: 'The app keeps totals, warnings, approval state, and send actions in one place so you do not bounce between panels.',
+    },
+    {
+      title: 'Native and ERC20 support',
+      description: 'Switch between network currency payouts and token distributions without losing your current recipient list.',
+    },
+    {
+      title: 'Paste-friendly input',
+      description: 'Handle bulk imports from spreadsheets, quick-add one-offs inline, and ignore duplicates before signing.',
+    },
+    {
+      title: 'Explorer visibility',
+      description: 'Jump straight to the active contract and confirmed transaction from the same dashboard session.',
+    },
+  ]
+  const faqItems = [
+    { q: 'What is MultiSend?', a: 'MultiSend is a smart contract tool that lets you send a native token or ERC20 asset to many wallet addresses in a single blockchain transaction.' },
+    { q: 'How much gas can it save?', a: 'Batching transfers usually costs much less than sending each transfer manually. Savings grow as the recipient list gets larger.' },
+    { q: 'Is it custodial?', a: 'No. You sign from your own wallet and funds move directly to recipients through the deployed contract.' },
+    { q: 'Which networks are supported?', a: 'The app supports Ethereum, Base, Polygon, Arbitrum, Optimism, BNB Chain, and Sepolia.' },
+  ]
+  const checklistItems = [
+    'Double-check the recipient list after pasting.',
+    'Use the approval step only when sending ERC20 tokens.',
+    'Review the confirmation modal before signing.',
+  ]
 
    return (
      <div className="app">
@@ -915,42 +979,98 @@ function App() {
       <main className="main">
         {!account ? (
           <div className="homepage">
-            {/* Hero Section */}
-            <section className="hero">
-              <div className="hero-content">
-                <div className="hero-badge">Multi-Chain Token Distribution</div>
-                <h1 className="hero-title">Send crypto to <span className="hero-highlight">multiple wallets</span> in one click</h1>
-                <p className="hero-subtitle">Batch send ETH & ERC20 tokens to hundreds of addresses in a single transaction. Save up to 80% on gas fees.</p>
-                <button className="btn-hero" onClick={handleConnectWallet} disabled={loading}>
-                  {loading ? 'Connecting...' : 'Launch App'}
-                </button>
-                <div className="hero-stats">
-                  <div className="hero-stat">
-                    <span className="hero-stat-value">{liveStats.totalTx}+</span>
-                    <span className="hero-stat-label">Transactions</span>
+            <section className="hero hero-grid">
+              <div className="hero-copy">
+                <div className="hero-badge">Trust-first batch payouts for modern on-chain teams</div>
+                <h1 className="hero-title">
+                  One signature to pay an entire <span className="hero-highlight">wallet list</span>.
+                </h1>
+                <p className="hero-subtitle">
+                  MultiSend turns a messy spreadsheet into a clean, review-first payout flow for native assets and ERC20 tokens across your active network.
+                </p>
+                <div className="hero-actions">
+                  <button className="btn-hero" onClick={handleConnectWallet} disabled={loading}>
+                    {loading ? 'Connecting...' : 'Launch App'}
+                  </button>
+                  <a className="btn-secondary" href="#how-it-works">See The Flow</a>
+                </div>
+                <div className="hero-inline-proof">
+                  <div className="hero-inline-proof-item">
+                    <strong>Wallet-first</strong>
+                    <span>Non-custodial by default</span>
                   </div>
-                  <div className="hero-stat-divider"></div>
-                  <div className="hero-stat">
-                    <span className="hero-stat-value">{liveStats.totalEth}+</span>
-                    <span className="hero-stat-label">ETH Sent</span>
+                  <div className="hero-inline-proof-item">
+                    <strong>ERC20 ready</strong>
+                    <span>Approval and send states in one view</span>
                   </div>
-                  <div className="hero-stat-divider"></div>
-                  <div className="hero-stat">
-                    <span className="hero-stat-value">6</span>
-                    <span className="hero-stat-label">Chains</span>
+                  <div className="hero-inline-proof-item">
+                    <strong>Explorer linked</strong>
+                    <span>Jump into contract and tx details fast</span>
                   </div>
-                  <div className="hero-stat-divider"></div>
-                  <div className="hero-stat">
-                    <span className="hero-stat-value">0%</span>
-                    <span className="hero-stat-label">Platform Fee</span>
+                </div>
+              </div>
+
+              <div className="hero-preview">
+                <div className="preview-window">
+                  <div className="preview-window-bar">
+                    <span className="preview-pill active">Native</span>
+                    <span className="preview-pill">ERC20</span>
+                    <span className="preview-pill muted">Review</span>
+                  </div>
+
+                  <div className="preview-metrics">
+                    <div className="preview-metric">
+                      <span className="preview-metric-label">Recipients</span>
+                      <strong>184</strong>
+                    </div>
+                    <div className="preview-metric">
+                      <span className="preview-metric-label">Total</span>
+                      <strong>14.3200 ETH</strong>
+                    </div>
+                    <div className="preview-metric">
+                      <span className="preview-metric-label">Review</span>
+                      <strong>4 warnings cleared</strong>
+                    </div>
+                  </div>
+
+                  <div className="preview-list">
+                    <div className="preview-row">
+                      <span className="preview-address">0x742d...5bE91</span>
+                      <span className="preview-amount">0.125 ETH</span>
+                    </div>
+                    <div className="preview-row">
+                      <span className="preview-address">0xAb58...eC9B</span>
+                      <span className="preview-amount">0.125 ETH</span>
+                    </div>
+                    <div className="preview-row">
+                      <span className="preview-address">0x66f8...A4d2</span>
+                      <span className="preview-amount">0.125 ETH</span>
+                    </div>
+                    <div className="preview-row muted">
+                      <span className="preview-address">+181 more recipients</span>
+                      <span className="preview-amount">Single transaction</span>
+                    </div>
+                  </div>
+
+                  <div className="preview-footer">
+                    <span>Save repeated manual sends</span>
+                    <strong>One review surface. One submit.</strong>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* Chain Logos Row */}
+            <section className="proof-strip">
+              {heroStats.map((item) => (
+                <div key={item.label} className="proof-card">
+                  <strong>{item.value}</strong>
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </section>
+
             <section className="chains-section">
-              <p className="chains-label">Supported Networks</p>
+              <p className="chains-label">Deployed networks</p>
               <div className="chains-row">
                 <div className="chain-item">{NetworkLogos.ethereum}<span>Ethereum</span></div>
                 <div className="chain-item">{NetworkLogos.base}<span>Base</span></div>
@@ -958,72 +1078,56 @@ function App() {
                 <div className="chain-item">{NetworkLogos.arbitrum}<span>Arbitrum</span></div>
                 <div className="chain-item">{NetworkLogos.optimism}<span>Optimism</span></div>
                 <div className="chain-item">{NetworkLogos.bnb}<span>BNB Chain</span></div>
+                <div className="chain-item">{NetworkLogos.sepolia}<span>Sepolia</span></div>
               </div>
             </section>
 
-            {/* How It Works */}
-            <section className="how-section">
-              <h2 className="section-title">How it works</h2>
-              <p className="section-subtitle">Three simple steps to distribute tokens</p>
+            <section className="how-section" id="how-it-works">
+              <h2 className="section-title">Built around the real payout workflow</h2>
+              <p className="section-subtitle">Connect, review, and send without treating the dashboard like a spreadsheet dump.</p>
               <div className="steps-row">
-                <div className="step-card">
-                  <div className="step-number">1</div>
-                  <div className="step-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                {workflowSteps.map((item) => (
+                  <div key={item.step} className="step-card">
+                    <div className="step-number">{item.step}</div>
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
                   </div>
-                  <h3>Connect Wallet</h3>
-                  <p>Connect your MetaMask, WalletConnect, or any Web3 wallet securely.</p>
-                </div>
-                <div className="step-connector">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </div>
-                <div className="step-card">
-                  <div className="step-number">2</div>
-                  <div className="step-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-                  </div>
-                  <h3>Enter Addresses</h3>
-                  <p>Paste recipient addresses and amounts. Supports CSV, one per line, or quick-add.</p>
-                </div>
-                <div className="step-connector">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </div>
-                <div className="step-card">
-                  <div className="step-number">3</div>
-                  <div className="step-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                  </div>
-                  <h3>Send</h3>
-                  <p>Review, confirm, and all transfers execute in a single on-chain transaction.</p>
-                </div>
+                ))}
               </div>
             </section>
 
-            {/* Smart Contract Section */}
-            <section className="contract-section">
+            <section className="feature-grid-section">
+              <div className="section-heading">
+                <h2 className="section-title">Designed to feel like a product, not just a contract wrapper</h2>
+                <p className="section-subtitle">The interface now emphasizes trust, review clarity, and faster batch preparation.</p>
+              </div>
+              <div className="feature-grid">
+                {featureCards.map((item) => (
+                  <article key={item.title} className="feature-card">
+                    <div className="feature-icon"></div>
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="contract-section modern-contract">
               <div className="contract-badge">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span>Verified Smart Contract</span>
+                <span>Verified on-chain contract</span>
               </div>
-              <p className="contract-desc">Our contract is open-source, verified on Etherscan, and has been reviewed for security. No admin keys, no upgradability - fully trustless.</p>
+              <p className="contract-desc">Open-source, explorer-visible, and non-custodial. The UI stays focused on review and execution, while the contract remains the source of truth for distribution.</p>
               <a href="https://etherscan.io/address/0x33b82Ad6f62332D6359e582b642466591A6a9DDA#code" target="_blank" rel="noopener noreferrer" className="contract-link">
                 View on Etherscan
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
               </a>
             </section>
 
-            {/* FAQ Section */}
             <section className="faq-section">
               <h2 className="section-title">FAQ</h2>
               <div className="faq-list">
-                {[
-                  { q: 'What is MultiSend?', a: 'MultiSend is a smart contract tool that lets you send ETH or ERC20 tokens to hundreds of wallet addresses in a single blockchain transaction, saving you time and gas fees.' },
-                  { q: 'How much gas does it save?', a: 'By batching transfers into one transaction, you can save up to 80% compared to sending individual transactions. The more recipients, the greater the savings.' },
-                  { q: 'Is it safe to use?', a: 'Yes. MultiSend is non-custodial - tokens transfer directly from your wallet to recipients. The smart contract is verified on Etherscan, open-source, and has no admin keys or upgrade functionality.' },
-                  { q: 'Which networks are supported?', a: 'MultiSend is deployed on Ethereum, Base, Polygon, Arbitrum, Optimism, and BNB Chain. You can switch networks directly in the app.' },
-                  { q: 'Are there any fees?', a: 'MultiSend charges 0% platform fees. You only pay the standard blockchain gas fee for the transaction.' },
-                  { q: 'Can I send ERC20 tokens?', a: 'Yes. You can send any ERC20 token. Just enter the token contract address, approve the spending allowance, and send to multiple recipients.' },
-                ].map((item, i) => (
+                {faqItems.map((item, i) => (
                   <div key={i} className={`faq-item ${openFaq === i ? 'open' : ''}`}>
                     <button className="faq-question" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
                       <span>{item.q}</span>
@@ -1035,28 +1139,41 @@ function App() {
               </div>
             </section>
 
-            {/* CTA Section */}
             <section className="cta-section">
-              <h2>Ready to send?</h2>
-              <p>Connect your wallet and start distributing tokens in seconds.</p>
-              <button className="btn-hero" onClick={handleConnectWallet} disabled={loading}>
-                {loading ? 'Connecting...' : 'Launch App'}
-              </button>
+              <h2>Ready to batch the next payout?</h2>
+              <p>Open the app, review recipients in one place, and send with a cleaner modern interface.</p>
+              <div className="cta-actions">
+                <button className="btn-hero" onClick={handleConnectWallet} disabled={loading}>
+                  {loading ? 'Connecting...' : 'Launch App'}
+                </button>
+              </div>
             </section>
           </div>
         ) : (
           <div className="dashboard">
-            {/* Page Header - at top */}
-            <div className="page-header">
-              <h1 className="page-title">
-                {activeTab === 'native' ? `Send ${nativeSymbol}` : 'Send Token'}
-              </h1>
-              <p className="page-description">
-                Distribute {activeTab === 'native' ? nativeSymbol : 'ERC20 tokens'} to multiple addresses in a single transaction
-              </p>
+            <div className="dashboard-hero">
+              <div className="page-header">
+                <span className="page-kicker">Distribution Console</span>
+                <h1 className="page-title">
+                  {activeTab === 'native' ? `Send ${nativeSymbol}` : 'Send Token'}
+                </h1>
+                <p className="page-description">
+                  Review recipients, approval state, totals, and explorer details before you submit the transaction.
+                </p>
+              </div>
+              <div className="dashboard-meta">
+                <span className="dashboard-chip">{network || 'Wallet connected'}</span>
+                <span className="dashboard-chip">{sendMode === 'same' ? 'Same amount mode' : 'Custom amounts mode'}</span>
+                {contractAddress ? (
+                  <a href={`${explorerUrl}/address/${contractAddress}`} target="_blank" rel="noopener noreferrer" className="dashboard-chip link">
+                    Contract {contractAddress.slice(0, 6)}...{contractAddress.slice(-4)}
+                  </a>
+                ) : (
+                  <span className="dashboard-chip muted">Contract unavailable on this network</span>
+                )}
+              </div>
             </div>
 
-            {/* Unsupported Network Warning */}
             {isUnsupportedNetwork && (
               <div className="alert alert-warning">
                 <span>Network not supported! Switch to a supported network:</span>
@@ -1068,10 +1185,195 @@ function App() {
               </div>
             )}
 
-            <div className="dashboard-layout">
-              {/* Sidebar */}
+            <SummaryBar
+              recipientCount={recipientCount}
+              totalAmount={totalAmount}
+              usdValue={price ? totalAmount * price : undefined}
+              symbol={symbol}
+              isApprovalRequired={activeTab === 'erc20' && needsApproval}
+              className="dashboard-summary"
+            />
+
+            <div className="dashboard-layout dashboard-layout-modern">
+              <div className="main-content">
+                <div className="send-card send-card-modern">
+                  <div className="send-card-top">
+                    <div>
+                      <div className="section-label">Asset</div>
+                      <div className="asset-switch" role="tablist" aria-label="Asset type">
+                        <button
+                          className={`asset-switch-btn ${activeTab === 'native' ? 'active' : ''}`}
+                          onClick={() => { setActiveTab('native'); setError(null); setSuccess(null) }}
+                        >
+                          <span className="asset-switch-icon">{NetworkLogos[networkConfig.logo]}</span>
+                          <span>Send {nativeSymbol}</span>
+                        </button>
+                        <button
+                          className={`asset-switch-btn ${activeTab === 'erc20' ? 'active' : ''}`}
+                          onClick={() => { setActiveTab('erc20'); setError(null); setSuccess(null) }}
+                        >
+                          <span className="asset-switch-icon erc20">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="12" cy="12" r="10"/>
+                              <path d="M12 6v12M6 12h12"/>
+                            </svg>
+                          </span>
+                          <span>Send Token</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="send-card-note">
+                      {activeTab === 'native'
+                        ? `Using ${nativeSymbol} on ${networkConfig.name}.`
+                        : 'ERC20 mode requires a token address and approval when needed.'}
+                    </div>
+                  </div>
+
+                  {activeTab === 'erc20' && (
+                    <div className="token-input-section">
+                      <label>Token Contract Address</label>
+                      <input
+                        type="text"
+                        value={tokenAddress}
+                        onChange={(e) => setTokenAddress(e.target.value)}
+                        placeholder="0x..."
+                        className="input-token"
+                      />
+                      {tokenInfo && (
+                        <div className="token-badge">
+                          <span className="token-name">{tokenInfo.name}</span>
+                          <span className="token-symbol">{tokenInfo.symbol}</span>
+                          <span className="token-balance">{parseFloat(tokenInfo.balance).toFixed(2)} available</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <ModeSelector activeMode={sendMode} onChange={setSendMode} />
+
+                  {sendMode === 'same' && (
+                    <div className="amount-section">
+                      <label>Amount per recipient</label>
+                      <div className="amount-input-wrapper">
+                        <input
+                          type="number"
+                          value={sameAmount}
+                          onChange={(e) => setSameAmount(e.target.value)}
+                          placeholder="0.00"
+                          className="input-amount"
+                          step="any"
+                        />
+                        <div className="amount-toggle">
+                          <button
+                            className={!useUsd ? 'active' : ''}
+                            onClick={() => setUseUsd(false)}
+                          >
+                            {symbol}
+                          </button>
+                          <button
+                            className={useUsd ? 'active' : ''}
+                            onClick={() => setUseUsd(true)}
+                            disabled={!price}
+                          >
+                            USD
+                          </button>
+                        </div>
+                      </div>
+                      {useUsd && price && sameAmount && (
+                        <div className="conversion-hint">
+                          ≈ {(parseFloat(sameAmount) / price).toFixed(6)} {symbol} per recipient
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="recipients-section modern">
+                    <div className="recipients-header modern">
+                      <div>
+                        <label>{sendMode === 'same' ? 'Recipient Addresses' : 'Recipients & Amounts'}</label>
+                        <p className="recipients-subtitle">
+                          {sendMode === 'same'
+                            ? 'Paste one address per line or build your list inline.'
+                            : 'Use address and amount pairs, one recipient per line.'}
+                        </p>
+                      </div>
+                      <button className="btn-clear" onClick={clearAll}>Clear All</button>
+                    </div>
+
+                    <RecipientInput
+                      value={recipients}
+                      onChange={setRecipients}
+                      sendMode={sendMode}
+                      parseWarnings={parseWarnings}
+                      quickAddAddress={quickAddAddress}
+                      onQuickAddAddressChange={setQuickAddAddress}
+                      quickAddAmount={quickAddAmount}
+                      onQuickAddAmountChange={setQuickAddAmount}
+                      onQuickAdd={addQuickRecipient}
+                      isQuickAddDisabled={isQuickAddDisabled}
+                    />
+                  </div>
+
+                  {activeTab === 'erc20' && needsApproval && tokenInfo && !isUnsupportedNetwork && (
+                    <ApprovalCard
+                      tokenSymbol={tokenInfo.symbol}
+                      isApproving={approving}
+                      isApproved={false}
+                      onApprove={approveToken}
+                    />
+                  )}
+
+                  {error && (
+                    <div className="alert alert-error">
+                      {error}
+                    </div>
+                  )}
+
+                  {success && (
+                    <div className="alert alert-success">
+                      <div className="success-message">
+                        {success.total && success.count ? (
+                          <>Sent {success.total.toFixed(4)} {success.symbol} to {success.count} {success.count === 1 ? 'address' : 'addresses'}</>
+                        ) : (
+                          success.message
+                        )}
+                      </div>
+                      {success.hash && (
+                        <a href={`${explorerUrl}/tx/${success.hash}`} target="_blank" rel="noopener noreferrer">
+                          View Transaction
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    className="btn-send"
+                    onClick={activeTab === 'native' ? confirmSendNative : confirmSendERC20}
+                    disabled={loading || recipientCount === 0 || totalAmount === 0 || isUnsupportedNetwork || (activeTab === 'erc20' && (!tokenInfo || needsApproval))}
+                  >
+                    {loading ? (
+                      <span className="btn-loading">
+                        <span className="spinner"></span>
+                        Processing...
+                      </span>
+                    ) : isUnsupportedNetwork ? (
+                      'Switch to Supported Network'
+                    ) : activeTab === 'erc20' && !tokenInfo ? (
+                      'Enter Token Address'
+                    ) : activeTab === 'erc20' && needsApproval ? (
+                      'Approve Token First'
+                    ) : recipientCount === 0 ? (
+                      'Add Recipients'
+                    ) : totalAmount === 0 ? (
+                      'Enter Amount'
+                    ) : (
+                      `Send ${totalAmount.toFixed(4)} ${symbol} to ${recipientCount} ${recipientCount === 1 ? 'address' : 'addresses'}`
+                    )}
+                  </button>
+                </div>
+              </div>
+
               <aside className="sidebar">
-                {/* Wallet Card */}
                 <div className="sidebar-card">
                   <div className="sidebar-section-title">Wallet</div>
                   <div className="sidebar-wallet">
@@ -1091,35 +1393,8 @@ function App() {
                   </div>
                 </div>
 
-                {/* Navigation Card */}
                 <div className="sidebar-card">
-                  <div className="sidebar-section-title">Send Type</div>
-                  <div className="sidebar-nav">
-                    <button
-                      className={`sidebar-nav-item ${activeTab === 'native' ? 'active' : ''}`}
-                      onClick={() => { setActiveTab('native'); setError(null); setSuccess(null); }}
-                    >
-                      <span className="sidebar-nav-icon">{NetworkLogos[networkConfig.logo]}</span>
-                      <span>Send {nativeSymbol}</span>
-                    </button>
-                    <button
-                      className={`sidebar-nav-item ${activeTab === 'erc20' ? 'active' : ''}`}
-                      onClick={() => { setActiveTab('erc20'); setError(null); setSuccess(null); }}
-                    >
-                      <span className="sidebar-nav-icon erc20">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="12" r="10"/>
-                          <path d="M12 6v12M6 12h12"/>
-                        </svg>
-                      </span>
-                      <span>Send Token</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Stats Card */}
-                <div className="sidebar-card">
-                  <div className="sidebar-section-title">Transaction Preview</div>
+                  <div className="sidebar-section-title">Review</div>
                   <div className="sidebar-stats">
                     <div className="sidebar-stat">
                       <span className="sidebar-stat-label">Recipients</span>
@@ -1135,252 +1410,31 @@ function App() {
                         <span className="sidebar-stat-value accent">${(totalAmount * price).toFixed(2)}</span>
                       </div>
                     )}
+                    <div className="sidebar-stat">
+                      <span className="sidebar-stat-label">Mode</span>
+                      <span className="sidebar-stat-value">{sendMode === 'same' ? 'Same amount' : 'Custom amounts'}</span>
+                    </div>
+                    <div className="sidebar-stat">
+                      <span className="sidebar-stat-label">Network</span>
+                      <span className="sidebar-stat-value">{networkConfig.name}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="sidebar-card accent-card">
+                  <div className="sidebar-section-title">Before You Send</div>
+                  <div className="sidebar-tips">
+                    {checklistItems.map((item) => (
+                      <div key={item} className="sidebar-tip">
+                        <span className="sidebar-tip-dot"></span>
+                        <span>{item}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </aside>
-
-              {/* Main Content */}
-              <div className="main-content">
-                {/* Main Card */}
-              <div className="send-card">
-                {/* Token Address for ERC20 */}
-                {activeTab === 'erc20' && (
-                  <div className="token-input-section">
-                    <label>Token Contract Address</label>
-                    <input
-                      type="text"
-                      value={tokenAddress}
-                      onChange={(e) => setTokenAddress(e.target.value)}
-                      placeholder="0x..."
-                      className="input-token"
-                    />
-                    {tokenInfo && (
-                      <div className="token-badge">
-                        <span className="token-name">{tokenInfo.name}</span>
-                        <span className="token-symbol">{tokenInfo.symbol}</span>
-                        <span className="token-balance">{parseFloat(tokenInfo.balance).toFixed(2)} available</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Send Mode Toggle */}
-                <div className="mode-section">
-                  <label>Distribution Mode</label>
-                  <div className="mode-toggle">
-                    <button
-                      className={`mode-option ${sendMode === 'same' ? 'active' : ''}`}
-                      onClick={() => setSendMode('same')}
-                    >
-                      <span className="mode-icon">═</span>
-                      <span>Same Amount</span>
-                      <small>Send equal amounts to all</small>
-                    </button>
-                    <button
-                      className={`mode-option ${sendMode === 'custom' ? 'active' : ''}`}
-                      onClick={() => setSendMode('custom')}
-                    >
-                      <span className="mode-icon">≠</span>
-                      <span>Custom Amounts</span>
-                      <small>Different amount per address</small>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Amount Input (for Same Amount mode) */}
-                {sendMode === 'same' && (
-                  <div className="amount-section">
-                    <label>Amount per recipient</label>
-                    <div className="amount-input-wrapper">
-                      <input
-                        type="number"
-                        value={sameAmount}
-                        onChange={(e) => setSameAmount(e.target.value)}
-                        placeholder="0.00"
-                        className="input-amount"
-                        step="any"
-                      />
-                      <div className="amount-toggle">
-                        <button
-                          className={!useUsd ? 'active' : ''}
-                          onClick={() => setUseUsd(false)}
-                        >
-                          {symbol}
-                        </button>
-                        <button
-                          className={useUsd ? 'active' : ''}
-                          onClick={() => setUseUsd(true)}
-                          disabled={!price}
-                        >
-                          USD
-                        </button>
-                      </div>
-                    </div>
-                    {useUsd && price && sameAmount && (
-                      <div className="conversion-hint">
-                        ≈ {(parseFloat(sameAmount) / price).toFixed(6)} {symbol} per recipient
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Recipients Input */}
-                <div className="recipients-section">
-                  <div className="recipients-header">
-                    <label>
-                      {sendMode === 'same' ? 'Recipient Addresses' : 'Recipients & Amounts'}
-                    </label>
-                    <button className="btn-clear" onClick={clearAll}>Clear All</button>
-                  </div>
-
-                  <textarea
-                    value={recipients}
-                    onChange={(e) => setRecipients(e.target.value)}
-                    placeholder={sendMode === 'same'
-                      ? "Paste addresses (one per line)\n0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91\n0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B"
-                      : "Address, Amount (one per line)\n0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91, 0.1\n0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B, 0.25"
-                    }
-                    className="input-recipients"
-                  />
-
-                  {/* Quick Add */}
-                  <div className="quick-add">
-                    <input
-                      type="text"
-                      value={quickAddAddress}
-                      onChange={(e) => setQuickAddAddress(e.target.value)}
-                      placeholder="Quick add address"
-                      className="input-quick"
-                    />
-                    {sendMode === 'custom' && (
-                      <input
-                        type="number"
-                        value={quickAddAmount}
-                        onChange={(e) => setQuickAddAmount(e.target.value)}
-                        placeholder="Amount"
-                        className="input-quick-amount"
-                        step="any"
-                      />
-                    )}
-                    <button className="btn-add" onClick={addQuickRecipient}>+ Add</button>
-                  </div>
-
-                  {/* Parse Warnings */}
-                  {(parseWarnings.invalid > 0 || parseWarnings.duplicates > 0) && (
-                    <div className="parse-warnings">
-                      {parseWarnings.invalid > 0 && (
-                        <span className="warning-item warning-invalid">
-                          {parseWarnings.invalid} invalid {parseWarnings.invalid === 1 ? 'entry' : 'entries'} ignored
-                        </span>
-                      )}
-                      {parseWarnings.duplicates > 0 && (
-                        <span className="warning-item warning-duplicate">
-                          {parseWarnings.duplicates} duplicate {parseWarnings.duplicates === 1 ? 'address' : 'addresses'} removed
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Alerts */}
-                {error && (
-                  <div className="alert alert-error">
-                    {error}
-                  </div>
-                )}
-
-                {success && (
-                  <div className="alert alert-success">
-                    <div className="success-message">
-                      {success.total && success.count ? (
-                        <>Sent {success.total.toFixed(4)} {success.symbol} to {success.count} {success.count === 1 ? 'address' : 'addresses'}</>
-                      ) : (
-                        success.message
-                      )}
-                    </div>
-                    {success.hash && (
-                      <a href={`${explorerUrl}/tx/${success.hash}`} target="_blank" rel="noopener noreferrer">
-                        View Transaction
-                      </a>
-                    )}
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                {activeTab === 'native' ? (
-                  <button
-                    className="btn-send"
-                    onClick={confirmSendNative}
-                    disabled={loading || recipientCount === 0 || totalAmount === 0 || isUnsupportedNetwork}
-                  >
-                    {loading ? (
-                      <span className="btn-loading">
-                        <span className="spinner"></span>
-                        Processing...
-                      </span>
-                    ) : isUnsupportedNetwork ? (
-                      'Switch to Supported Network'
-                    ) : recipientCount === 0 ? (
-                      'Add Recipients'
-                    ) : totalAmount === 0 ? (
-                      'Enter Amount'
-                    ) : (
-                      `Send ${totalAmount.toFixed(4)} ${nativeSymbol} to ${recipientCount} ${recipientCount === 1 ? 'address' : 'addresses'}`
-                    )}
-                  </button>
-                ) : (
-                  <>
-                    {needsApproval && tokenInfo && !isUnsupportedNetwork && (
-                      <button
-                        className="btn-approve"
-                        onClick={approveToken}
-                        disabled={approving}
-                      >
-                        {approving ? 'Approving...' : `Approve ${tokenInfo.symbol}`}
-                      </button>
-                    )}
-                    <button
-                      className="btn-send"
-                      onClick={confirmSendERC20}
-                      disabled={loading || recipientCount === 0 || !tokenInfo || needsApproval || totalAmount === 0 || isUnsupportedNetwork}
-                    >
-                      {loading ? (
-                        <span className="btn-loading">
-                          <span className="spinner"></span>
-                          Processing...
-                        </span>
-                      ) : isUnsupportedNetwork ? (
-                        'Switch to Supported Network'
-                      ) : !tokenInfo ? (
-                        'Enter Token Address'
-                      ) : recipientCount === 0 ? (
-                        'Add Recipients'
-                      ) : needsApproval ? (
-                        'Approve Token First'
-                      ) : totalAmount === 0 ? (
-                        'Enter Amount'
-                      ) : (
-                        `Send ${totalAmount.toFixed(4)} ${tokenInfo.symbol} to ${recipientCount} ${recipientCount === 1 ? 'address' : 'addresses'}`
-                      )}
-                    </button>
-                  </>
-                )}
-              </div>
-
-              {/* Contract Info */}
-              <div className="contract-info">
-                {contractAddress ? (
-                  <a href={`${explorerUrl}/address/${contractAddress}`} target="_blank" rel="noopener noreferrer">
-                    Contract: {contractAddress.slice(0, 10)}...{contractAddress.slice(-8)}
-                  </a>
-                ) : (
-                  <span>Contract not deployed on {network}</span>
-                )}
-                {ethPrice && <span>{nativeSymbol}: ${ethPrice.toLocaleString()}</span>}
-              </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Confirmation Modal */}
