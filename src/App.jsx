@@ -300,6 +300,25 @@ function App() {
     }
   }, [chainId])
 
+  // Lock body scroll + close on Escape when modal open
+  useEffect(() => {
+    if (!showConfirmation && !showNetworkSwitcher) return
+    const handleKey = (e) => {
+      if (e.key === 'Escape') {
+        if (showConfirmation) setShowConfirmation(false)
+        if (showNetworkSwitcher) setShowNetworkSwitcher(false)
+      }
+    }
+    if (showConfirmation) {
+      document.body.style.overflow = 'hidden'
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      document.body.style.overflow = ''
+    }
+  }, [showConfirmation, showNetworkSwitcher])
+
   const fetchNativePrice = async (networkChainId) => {
     try {
       const config = NETWORK_CONFIG[Number(networkChainId)] || { coingeckoId: 'ethereum' }
@@ -878,18 +897,41 @@ function App() {
     {
       title: 'Review-first sending flow',
       description: 'The app keeps totals, warnings, approval state, and send actions in one place so you do not bounce between panels.',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+        </svg>
+      ),
     },
     {
       title: 'Native and ERC20 support',
       description: 'Switch between network currency payouts and token distributions without losing your current recipient list.',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
+        </svg>
+      ),
     },
     {
       title: 'Paste-friendly input',
       description: 'Handle bulk imports from spreadsheets, quick-add one-offs inline, and ignore duplicates before signing.',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/>
+          <rect x="8" y="2" width="8" height="4" rx="1"/>
+          <path d="M9 12h6M9 16h4"/>
+        </svg>
+      ),
     },
     {
       title: 'Explorer visibility',
       description: 'Jump straight to the active contract and confirmed transaction from the same dashboard session.',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+          <path d="M15 3h6v6"/><path d="M10 14L21 3"/>
+        </svg>
+      ),
     },
   ]
   const faqItems = [
@@ -910,10 +952,21 @@ function App() {
 
       {/* Header */}
       <header className="header">
-        <div className="logo">
-          <img src="/logo.png" alt="MultiSend" className="logo-img" />
+        <div className="header-inner">
+        <a
+          href="/"
+          className="logo"
+          onClick={(e) => {
+            if (!account) {
+              e.preventDefault()
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }
+          }}
+          aria-label="MultiSend home"
+        >
+          <img src="/logo.png" alt="" className="logo-img" />
           <span>MultiSend</span>
-        </div>
+        </a>
         <div className="header-right">
           {/* Theme Toggle Button */}
           <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
@@ -934,6 +987,9 @@ function App() {
                 <button
                   className="network-switcher-btn"
                   onClick={() => setShowNetworkSwitcher(!showNetworkSwitcher)}
+                  aria-haspopup="listbox"
+                  aria-expanded={showNetworkSwitcher}
+                  aria-label={`Network: ${network}. Click to switch.`}
                 >
                   <span className="network-btn-logo">
                     {NetworkLogos[networkConfig.logo] || <span className="network-dot"></span>}
@@ -974,6 +1030,7 @@ function App() {
             </>
           )}
         </div>
+        </div>
       </header>
 
       <main className="main">
@@ -981,43 +1038,23 @@ function App() {
           <div className="homepage">
             <section className="hero hero-grid">
               <div className="hero-copy">
-                <div className="hero-badge">Trust-first batch payouts for modern on-chain teams</div>
+                <div className="hero-badge">Multi-chain · Non-custodial</div>
                 <h1 className="hero-title">
-                  One signature to pay an entire <span className="hero-highlight">wallet list</span>.
+                  Send to many wallets in <span className="hero-highlight">one transaction</span>.
                 </h1>
                 <p className="hero-subtitle">
-                  MultiSend turns a messy spreadsheet into a clean, review-first payout flow for native assets and ERC20 tokens across your active network.
+                  Batch native and ERC20 payouts across seven networks. Connect, paste, send.
                 </p>
                 <div className="hero-actions">
                   <button className="btn-hero" onClick={handleConnectWallet} disabled={loading}>
                     {loading ? 'Connecting...' : 'Launch App'}
                   </button>
-                  <a className="btn-secondary" href="#how-it-works">See The Flow</a>
-                </div>
-                <div className="hero-inline-proof">
-                  <div className="hero-inline-proof-item">
-                    <strong>Wallet-first</strong>
-                    <span>Non-custodial by default</span>
-                  </div>
-                  <div className="hero-inline-proof-item">
-                    <strong>ERC20 ready</strong>
-                    <span>Approval and send states in one view</span>
-                  </div>
-                  <div className="hero-inline-proof-item">
-                    <strong>Explorer linked</strong>
-                    <span>Jump into contract and tx details fast</span>
-                  </div>
+                  <a className="btn-secondary" href="#how-it-works">How it works</a>
                 </div>
               </div>
 
               <div className="hero-preview">
                 <div className="preview-window">
-                  <div className="preview-window-bar">
-                    <span className="preview-pill active">Native</span>
-                    <span className="preview-pill">ERC20</span>
-                    <span className="preview-pill muted">Review</span>
-                  </div>
-
                   <div className="preview-metrics">
                     <div className="preview-metric">
                       <span className="preview-metric-label">Recipients</span>
@@ -1025,11 +1062,7 @@ function App() {
                     </div>
                     <div className="preview-metric">
                       <span className="preview-metric-label">Total</span>
-                      <strong>14.3200 ETH</strong>
-                    </div>
-                    <div className="preview-metric">
-                      <span className="preview-metric-label">Review</span>
-                      <strong>4 warnings cleared</strong>
+                      <strong>14.32 ETH</strong>
                     </div>
                   </div>
 
@@ -1047,66 +1080,52 @@ function App() {
                       <span className="preview-amount">0.125 ETH</span>
                     </div>
                     <div className="preview-row muted">
-                      <span className="preview-address">+181 more recipients</span>
-                      <span className="preview-amount">Single transaction</span>
+                      <span className="preview-address">+181 more</span>
+                      <span className="preview-amount">Single tx</span>
                     </div>
-                  </div>
-
-                  <div className="preview-footer">
-                    <span>Save repeated manual sends</span>
-                    <strong>One review surface. One submit.</strong>
                   </div>
                 </div>
               </div>
             </section>
 
-            <section className="proof-strip">
-              {heroStats.map((item) => (
-                <div key={item.label} className="proof-card">
-                  <strong>{item.value}</strong>
-                  <span>{item.label}</span>
-                </div>
-              ))}
-            </section>
-
             <section className="chains-section">
-              <p className="chains-label">Deployed networks</p>
-              <div className="chains-row">
-                <div className="chain-item">{NetworkLogos.ethereum}<span>Ethereum</span></div>
-                <div className="chain-item">{NetworkLogos.base}<span>Base</span></div>
-                <div className="chain-item">{NetworkLogos.polygon}<span>Polygon</span></div>
-                <div className="chain-item">{NetworkLogos.arbitrum}<span>Arbitrum</span></div>
-                <div className="chain-item">{NetworkLogos.optimism}<span>Optimism</span></div>
-                <div className="chain-item">{NetworkLogos.bnb}<span>BNB Chain</span></div>
-                <div className="chain-item">{NetworkLogos.sepolia}<span>Sepolia</span></div>
+              <p className="chains-label">Supported networks</p>
+              <div className="chains-marquee" aria-label="Supported networks">
+                <div className="chains-track" aria-hidden="false">
+                  {[...Array(2)].map((_, dup) => (
+                    <div className="chains-row" key={dup} aria-hidden={dup === 1}>
+                      <div className="chain-item">{NetworkLogos.ethereum}<span>Ethereum</span></div>
+                      <div className="chain-item">{NetworkLogos.base}<span>Base</span></div>
+                      <div className="chain-item">{NetworkLogos.polygon}<span>Polygon</span></div>
+                      <div className="chain-item">{NetworkLogos.arbitrum}<span>Arbitrum</span></div>
+                      <div className="chain-item">{NetworkLogos.optimism}<span>Optimism</span></div>
+                      <div className="chain-item">{NetworkLogos.bnb}<span>BNB</span></div>
+                      <div className="chain-item">{NetworkLogos.sepolia}<span>Sepolia</span></div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
 
             <section className="how-section" id="how-it-works">
-              <h2 className="section-title">Built around the real payout workflow</h2>
-              <p className="section-subtitle">Connect, review, and send without treating the dashboard like a spreadsheet dump.</p>
+              <h2 className="section-title">How it works</h2>
               <div className="steps-row">
                 {workflowSteps.map((item) => (
                   <div key={item.step} className="step-card">
                     <div className="step-number">{item.step}</div>
                     <h3>{item.title}</h3>
-                    <p>{item.description}</p>
                   </div>
                 ))}
               </div>
             </section>
 
             <section className="feature-grid-section">
-              <div className="section-heading">
-                <h2 className="section-title">Designed to feel like a product, not just a contract wrapper</h2>
-                <p className="section-subtitle">The interface now emphasizes trust, review clarity, and faster batch preparation.</p>
-              </div>
+              <h2 className="section-title">Built for speed and clarity</h2>
               <div className="feature-grid">
                 {featureCards.map((item) => (
                   <article key={item.title} className="feature-card">
-                    <div className="feature-icon"></div>
+                    <div className="feature-icon">{item.icon}</div>
                     <h3>{item.title}</h3>
-                    <p>{item.description}</p>
                   </article>
                 ))}
               </div>
@@ -1114,13 +1133,12 @@ function App() {
 
             <section className="contract-section modern-contract">
               <div className="contract-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span>Verified on-chain contract</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span>Verified · Open-source · Non-custodial</span>
               </div>
-              <p className="contract-desc">Open-source, explorer-visible, and non-custodial. The UI stays focused on review and execution, while the contract remains the source of truth for distribution.</p>
               <a href="https://etherscan.io/address/0x33b82Ad6f62332D6359e582b642466591A6a9DDA#code" target="_blank" rel="noopener noreferrer" className="contract-link">
-                View on Etherscan
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                View contract on Etherscan
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
               </a>
             </section>
 
@@ -1129,19 +1147,25 @@ function App() {
               <div className="faq-list">
                 {faqItems.map((item, i) => (
                   <div key={i} className={`faq-item ${openFaq === i ? 'open' : ''}`}>
-                    <button className="faq-question" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                    <button
+                      className="faq-question"
+                      onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                      aria-expanded={openFaq === i}
+                      aria-controls={`faq-panel-${i}`}
+                    >
                       <span>{item.q}</span>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
-                    {openFaq === i && <div className="faq-answer">{item.a}</div>}
+                    <div id={`faq-panel-${i}`} className="faq-answer-wrap" role="region">
+                      <div className="faq-answer">{item.a}</div>
+                    </div>
                   </div>
                 ))}
               </div>
             </section>
 
             <section className="cta-section">
-              <h2>Ready to batch the next payout?</h2>
-              <p>Open the app, review recipients in one place, and send with a cleaner modern interface.</p>
+              <h2>Start batching</h2>
               <div className="cta-actions">
                 <button className="btn-hero" onClick={handleConnectWallet} disabled={loading}>
                   {loading ? 'Connecting...' : 'Launch App'}
@@ -1439,11 +1463,21 @@ function App() {
 
         {/* Confirmation Modal */}
         {showConfirmation && pendingTx && (
-          <div className="confirmation-overlay" onClick={() => setShowConfirmation(false)}>
-            <div className="confirmation-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="confirmation-overlay" onClick={() => setShowConfirmation(false)} role="presentation">
+            <div
+              className="confirmation-modal"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="confirm-tx-title"
+            >
               <div className="confirmation-header">
-                <h3>Confirm Transaction</h3>
-                <button className="confirmation-close" onClick={() => setShowConfirmation(false)}>×</button>
+                <h3 id="confirm-tx-title">Confirm Transaction</h3>
+                <button
+                  className="confirmation-close"
+                  onClick={() => setShowConfirmation(false)}
+                  aria-label="Close confirmation dialog"
+                >×</button>
               </div>
 
               <div className="confirmation-body">
@@ -1493,6 +1527,7 @@ function App() {
                 <button
                   className="btn-confirm"
                   onClick={pendingTx.type === 'native' ? sendNative : sendERC20}
+                  autoFocus
                 >
                   Confirm & Send
                 </button>

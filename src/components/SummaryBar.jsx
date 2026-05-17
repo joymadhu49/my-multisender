@@ -77,14 +77,14 @@ export function SummaryBar({
           background: var(--bg-surface);
           border-bottom: 1px solid var(--border-subtle);
           backdrop-filter: blur(10px);
-          padding: var(--space-4) var(--space-6);
-          margin: 0 0 var(--space-6) 0;
+          padding: 10px var(--space-4);
+          margin: 0 0 var(--space-3) 0;
         }
 
         .summary-container {
           display: flex;
           align-items: center;
-          gap: var(--space-4);
+          gap: var(--space-5);
           max-width: 100%;
           overflow-x: auto;
           -webkit-overflow-scrolling: touch;
@@ -92,42 +92,42 @@ export function SummaryBar({
 
         .summary-item {
           display: flex;
-          flex-direction: column;
-          gap: var(--space-1);
+          flex-direction: row;
+          align-items: baseline;
+          gap: var(--space-2);
           white-space: nowrap;
         }
 
         .summary-label {
-          font-size: 0.625rem;
+          font-size: 0.6875rem;
           text-transform: uppercase;
-          letter-spacing: 1px;
+          letter-spacing: 0.1em;
           color: var(--text-tertiary);
           font-weight: 600;
         }
 
         .summary-value {
-          font-size: 1rem;
-          font-weight: 700;
+          font-size: 0.9375rem;
+          font-weight: 600;
           color: var(--text-primary);
-          font-family: 'Monaco', 'Courier New', monospace;
+          font-variant-numeric: tabular-nums;
+          font-family: 'JetBrains Mono', 'SF Mono', monospace;
         }
 
         .summary-value.primary {
-          background: var(--gradient-accent);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          font-size: 1.125rem;
+          color: var(--accent);
+          background: none;
+          -webkit-text-fill-color: currentColor;
+          font-size: 0.9375rem;
         }
 
         .summary-item.highlighted {
-          flex-grow: 1;
-          max-width: 200px;
+          flex-grow: 0;
         }
 
         .summary-divider {
           width: 1px;
-          height: 24px;
+          height: 18px;
           background: var(--border-subtle);
         }
 
