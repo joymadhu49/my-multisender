@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { ethers } from 'ethers'
 import { MULTISENDER_ADDRESSES, SUPPORTED_CHAINS, getContractAddress, MULTISENDER_ABI, ERC20_ABI } from './contract'
 import { getNativePrice, getTokenPrice } from './priceApi'
-import { initWalletConnect, connectWallet, disconnectWallet, getProvider } from './walletConnect'
+import { useAppKit, useAppKitAccount, useAppKitNetwork, useAppKitProvider, useDisconnect } from '@reown/appkit/react'
+import { appkit } from './appkit'
 import SummaryBar from './components/SummaryBar'
 import ModeSelector from './components/ModeSelector'
 import RecipientInput from './components/RecipientInput'
@@ -110,6 +111,18 @@ function App() {
 
   // Parse warnings (invalid addresses, duplicates)
   const [parseWarnings, setParseWarnings] = useState({ invalid: 0, duplicates: 0 })
+
+  // ── Reown AppKit wallet state (replaces the old WalletConnect provider plumbing) ──
+  const { open: openAppKit } = useAppKit()
+  const { address: akAddress, isConnected: akIsConnected } = useAppKitAccount()
+  const { chainId: akChainId } = useAppKitNetwork()
+  const { walletProvider } = useAppKitProvider('eip155')
+  const { disconnect: akDisconnect } = useDisconnect()
+
+  // Keep the latest EIP-1193 provider in a ref so the imperative helpers (send,
+  // approve, balance, network switch) can keep using the same getProvider() pattern.
+  const providerRef = useRef(null)
+  const getProvider = () => providerRef.current
 
   // Network logos as inline SVGs
   const NetworkLogos = {
@@ -222,9 +235,10 @@ function App() {
     localStorage.setItem('theme', newTheme)
   }
 
-  // Apply theme to body
+  // Apply theme to body + keep the AppKit modal in sync
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
+    try { appkit?.setThemeMode?.(theme) } catch (e) { /* noop */ }
   }, [theme])
 
   // Fetch live stats from Etherscan (Ethereum mainnet contract)
@@ -247,52 +261,41 @@ function App() {
     fetchStats()
   }, [])
 
-  // Initialize wallet connection on mount
+  // Keep the provider ref in sync with AppKit's current wallet provider.
+  // Declared first so providerRef is set before the balance effect runs.
   useEffect(() => {
-    checkConnection()
-  }, [])
+    providerRef.current = walletProvider || null
+  }, [walletProvider])
 
-  // Set up event listeners for wallet provider - only when account changes
+  // Sync the connected account from AppKit.
   useEffect(() => {
-    const wcProvider = getProvider()
-    
-    // If no provider, ensure we're showing login screen
-    if (!wcProvider) {
-      return
+    if (akIsConnected && akAddress) {
+      setAccount(akAddress)
+    } else {
+      setAccount(null)
+      setBalance(null)
     }
+  }, [akIsConnected, akAddress])
 
-    const handleDisconnect = () => {
-      // Clear all application state when wallet disconnects
-      clearAllState()
+  // Sync the active network from AppKit.
+  useEffect(() => {
+    if (akChainId) {
+      const id = Number(akChainId)
+      setChainId(id)
+      const config = NETWORK_CONFIG[id]
+      setNetwork(config?.name || `Chain ${id}`)
+    } else {
+      setChainId(null)
+      setNetwork(null)
     }
+  }, [akChainId])
 
-    const handleAccountsChange = (accounts) => {
-      handleAccountsChanged(accounts)
+  // Refresh balance whenever the account, network, or provider changes.
+  useEffect(() => {
+    if (akIsConnected && akAddress && walletProvider) {
+      updateBalance(akAddress)
     }
-
-    const handleChainChange = async () => {
-      await updateNetwork()
-      if (account) {
-        await updateBalance(account)
-      }
-    }
-    
-    // Attach listeners
-    wcProvider.on('accountsChanged', handleAccountsChange)
-    wcProvider.on('chainChanged', handleChainChange)
-    wcProvider.on('disconnect', handleDisconnect)
-    
-    // Cleanup: remove listeners
-    return () => {
-      try {
-        wcProvider.removeEventListener('accountsChanged', handleAccountsChange)
-        wcProvider.removeEventListener('chainChanged', handleChainChange)
-        wcProvider.removeEventListener('disconnect', handleDisconnect)
-      } catch (e) {
-        // Provider might have been destroyed, silently ignore
-      }
-    }
-  }, [account])
+  }, [akIsConnected, akAddress, akChainId, walletProvider])
 
   // Fetch native token price when chainId changes
   useEffect(() => {
@@ -343,35 +346,9 @@ function App() {
     }
   }
 
-  const handleAccountsChanged = (accounts) => {
-    if (accounts.length === 0) {
-      setAccount(null)
-      setBalance(null)
-    } else {
-      setAccount(accounts[0])
-      updateBalance(accounts[0])
-    }
-  }
-
-  const checkConnection = async () => {
-    try {
-      await initWalletConnect()
-      const wcProvider = getProvider()
-      if (wcProvider) {
-        const accounts = await wcProvider.request({ method: 'eth_accounts' })
-        if (accounts.length > 0) {
-          setAccount(accounts[0])
-          await updateBalance(accounts[0])
-          await updateNetwork()
-        }
-      }
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
   const updateBalance = async (address) => {
     const wcProvider = getProvider()
+    if (!wcProvider) return
     const provider = new ethers.BrowserProvider(wcProvider)
     const bal = await provider.getBalance(address)
     setBalance(ethers.formatEther(bal))
@@ -395,27 +372,19 @@ function App() {
   }
 
   const handleConnectWallet = async () => {
+    // Opens the Reown AppKit modal; account/network/provider then flow in via
+    // the AppKit sync effects above. AppKit renders its own connecting UI.
     try {
-      setLoading(true)
-      const wcProvider = await connectWallet()
-      const accounts = await wcProvider.request({ method: 'eth_requestAccounts' })
-      setAccount(accounts[0])
-      await updateBalance(accounts[0])
-      await updateNetwork()
       setError(null)
+      await openAppKit()
     } catch (err) {
-      if (err.message !== 'Connection timeout') {
-        setError(parseError(err))
-      }
-    } finally {
-      setLoading(false)
+      setError(parseError(err))
     }
   }
 
   const handleDisconnectWallet = async () => {
     try {
-      // First disconnect the wallet from walletConnect
-      await disconnectWallet()
+      await akDisconnect()
     } catch (err) {
       console.error('Error disconnecting wallet:', err)
     } finally {
