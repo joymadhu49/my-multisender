@@ -63,6 +63,7 @@ export function RecipientInput({
             type="text"
             value={quickAddAddress}
             onChange={(e) => onQuickAddAddressChange(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !isQuickAddDisabled) onQuickAdd() }}
             placeholder="Quick add address"
             className="quick-add-address"
             spellCheck="false"
@@ -73,6 +74,7 @@ export function RecipientInput({
               type="number"
               value={quickAddAmount || ''}
               onChange={(e) => onQuickAddAmountChange(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !isQuickAddDisabled) onQuickAdd() }}
               placeholder="Amount"
               className="quick-add-amount"
               step="any"
@@ -83,6 +85,7 @@ export function RecipientInput({
             className="quick-add-button"
             onClick={onQuickAdd}
             disabled={isQuickAddDisabled}
+            aria-label="Add recipient"
             title={isQuickAddDisabled ? 'Enter valid address to add' : 'Add recipient'}
           >
             <svg viewBox="0 0 24 24" fill="currentColor">
@@ -156,14 +159,8 @@ export function RecipientInput({
         .recipient-textarea:focus {
           outline: none;
           border-color: var(--accent);
-          box-shadow: 
-            0 0 0 3px var(--accent-muted),
-            0 0 20px rgba(30, 41, 59, 0.15);
-          background: linear-gradient(
-            135deg,
-            var(--bg-elevated) 0%,
-            rgba(30, 41, 59, 0.02) 100%
-          );
+          box-shadow: 0 0 0 3px var(--accent-muted);
+          background: var(--bg-elevated);
         }
 
         .textarea-helper {
@@ -217,12 +214,8 @@ export function RecipientInput({
         .quick-add-amount:focus {
           outline: none;
           border-color: var(--accent);
-          background: linear-gradient(
-            135deg,
-            var(--bg-surface) 0%,
-            rgba(30, 41, 59, 0.02) 100%
-          );
-          box-shadow: 0 0 12px rgba(30, 41, 59, 0.15);
+          background: var(--bg-surface);
+          box-shadow: 0 0 0 3px var(--accent-muted);
         }
 
         .quick-add-amount {
@@ -249,7 +242,7 @@ export function RecipientInput({
         .quick-add-button:hover:not(:disabled) {
           background: var(--accent-hover);
           transform: translateY(-2px);
-          box-shadow: 0 8px 16px rgba(30, 41, 59, 0.2);
+          box-shadow: var(--shadow-md);
         }
 
         .quick-add-button:disabled {

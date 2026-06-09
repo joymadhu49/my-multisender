@@ -72,6 +72,10 @@ function App() {
   const [showNetworkSwitcher, setShowNetworkSwitcher] = useState(false)
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
 
+  // Whether the visitor has entered the app (send console) without yet connecting a wallet.
+  // Lets users explore and build a batch in a preview state; connecting is required only at send time.
+  const [entered, setEntered] = useState(false)
+
   // FAQ toggle
   const [openFaq, setOpenFaq] = useState(null)
 
@@ -418,6 +422,8 @@ function App() {
       // Always clear all state, regardless of disconnect success
       // This ensures the UI shows login screen even if disconnect partially fails
       clearAllState()
+      // Return the user to the landing page on disconnect (clearer mental model)
+      setEntered(false)
     }
   }
 
@@ -959,6 +965,7 @@ function App() {
           onClick={(e) => {
             if (!account) {
               e.preventDefault()
+              setEntered(false)
               window.scrollTo({ top: 0, behavior: 'smooth' })
             }
           }}
@@ -1029,12 +1036,17 @@ function App() {
                </button>
             </>
           )}
+          {!account && (
+            <button className="header-connect" onClick={handleConnectWallet} disabled={loading}>
+              {loading ? 'Connecting…' : 'Connect Wallet'}
+            </button>
+          )}
         </div>
         </div>
       </header>
 
       <main className="main">
-        {!account ? (
+        {!account && !entered ? (
           <div className="homepage">
             <section className="hero hero-grid">
               <div className="hero-copy">
@@ -1046,10 +1058,22 @@ function App() {
                   Batch native and ERC20 payouts across seven networks. Connect, paste, send.
                 </p>
                 <div className="hero-actions">
-                  <button className="btn-hero" onClick={handleConnectWallet} disabled={loading}>
-                    {loading ? 'Connecting...' : 'Launch App'}
+                  <button className="btn-hero" onClick={() => setEntered(true)}>
+                    Launch App
                   </button>
-                  <a className="btn-secondary" href="#how-it-works">How it works</a>
+                  <button className="btn-secondary" onClick={handleConnectWallet} disabled={loading}>
+                    {loading ? 'Connecting…' : 'Connect wallet'}
+                  </button>
+                </div>
+                <p className="hero-actions-note">No wallet needed to explore — connect only when you send.</p>
+
+                <div className="hero-stats">
+                  {heroStats.map((stat) => (
+                    <div className="hero-stat" key={stat.label}>
+                      <span className="hero-stat-value">{stat.value}</span>
+                      <span className="hero-stat-label">{stat.label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -1109,11 +1133,13 @@ function App() {
 
             <section className="how-section" id="how-it-works">
               <h2 className="section-title">How it works</h2>
+              <p className="section-subtitle">Three steps from a list of addresses to a single on-chain transaction.</p>
               <div className="steps-row">
                 {workflowSteps.map((item) => (
                   <div key={item.step} className="step-card">
                     <div className="step-number">{item.step}</div>
                     <h3>{item.title}</h3>
+                    <p className="step-desc">{item.description}</p>
                   </div>
                 ))}
               </div>
@@ -1121,11 +1147,13 @@ function App() {
 
             <section className="feature-grid-section">
               <h2 className="section-title">Built for speed and clarity</h2>
+              <p className="section-subtitle">Everything you need to review a batch and send it with confidence — nothing you don't.</p>
               <div className="feature-grid">
                 {featureCards.map((item) => (
                   <article key={item.title} className="feature-card">
                     <div className="feature-icon">{item.icon}</div>
                     <h3>{item.title}</h3>
+                    <p className="feature-desc">{item.description}</p>
                   </article>
                 ))}
               </div>
@@ -1144,6 +1172,7 @@ function App() {
 
             <section className="faq-section">
               <h2 className="section-title">FAQ</h2>
+              <p className="section-subtitle">Answers to the questions people ask before their first batch send.</p>
               <div className="faq-list">
                 {faqItems.map((item, i) => (
                   <div key={i} className={`faq-item ${openFaq === i ? 'open' : ''}`}>
@@ -1166,9 +1195,13 @@ function App() {
 
             <section className="cta-section">
               <h2>Start batching</h2>
+              <p className="cta-subtitle">Non-custodial and free to explore — open the console now, connect your wallet only when you're ready to send.</p>
               <div className="cta-actions">
-                <button className="btn-hero" onClick={handleConnectWallet} disabled={loading}>
-                  {loading ? 'Connecting...' : 'Launch App'}
+                <button className="btn-hero" onClick={() => setEntered(true)}>
+                  Launch App
+                </button>
+                <button className="btn-secondary" onClick={handleConnectWallet} disabled={loading}>
+                  {loading ? 'Connecting…' : 'Connect wallet'}
                 </button>
               </div>
             </section>
@@ -1179,21 +1212,25 @@ function App() {
               <div className="page-header">
                 <span className="page-kicker">Distribution Console</span>
                 <h1 className="page-title">
-                  {activeTab === 'native' ? `Send ${nativeSymbol}` : 'Send Token'}
+                  {activeTab === 'native' ? `Send ${nativeSymbol}` : (tokenInfo ? `Send ${tokenInfo.symbol}` : 'Send Token')}
                 </h1>
                 <p className="page-description">
                   Review recipients, approval state, totals, and explorer details before you submit the transaction.
                 </p>
               </div>
               <div className="dashboard-meta">
-                <span className="dashboard-chip">{network || 'Wallet connected'}</span>
+                <span className={`dashboard-chip ${account ? '' : 'preview'}`}>{account ? (network || 'Connected') : 'Preview mode'}</span>
                 <span className="dashboard-chip">{sendMode === 'same' ? 'Same amount mode' : 'Custom amounts mode'}</span>
                 {contractAddress ? (
                   <a href={`${explorerUrl}/address/${contractAddress}`} target="_blank" rel="noopener noreferrer" className="dashboard-chip link">
                     Contract {contractAddress.slice(0, 6)}...{contractAddress.slice(-4)}
                   </a>
-                ) : (
+                ) : account ? (
                   <span className="dashboard-chip muted">Contract unavailable on this network</span>
+                ) : (
+                  <a href="https://etherscan.io/address/0x33b82Ad6f62332D6359e582b642466591A6a9DDA" target="_blank" rel="noopener noreferrer" className="dashboard-chip link">
+                    View contract
+                  </a>
                 )}
               </div>
             </div>
@@ -1348,13 +1385,13 @@ function App() {
                   )}
 
                   {error && (
-                    <div className="alert alert-error">
+                    <div className="alert alert-error" role="alert" aria-live="assertive">
                       {error}
                     </div>
                   )}
 
                   {success && (
-                    <div className="alert alert-success">
+                    <div className="alert alert-success" role="status" aria-live="polite">
                       <div className="success-message">
                         {success.total && success.count ? (
                           <>Sent {success.total.toFixed(4)} {success.symbol} to {success.count} {success.count === 1 ? 'address' : 'addresses'}</>
@@ -1372,10 +1409,19 @@ function App() {
 
                   <button
                     className="btn-send"
-                    onClick={activeTab === 'native' ? confirmSendNative : confirmSendERC20}
-                    disabled={loading || recipientCount === 0 || totalAmount === 0 || isUnsupportedNetwork || (activeTab === 'erc20' && (!tokenInfo || needsApproval))}
+                    onClick={!account ? handleConnectWallet : (activeTab === 'native' ? confirmSendNative : confirmSendERC20)}
+                    disabled={account ? (loading || recipientCount === 0 || totalAmount === 0 || isUnsupportedNetwork || (activeTab === 'erc20' && (!tokenInfo || needsApproval))) : loading}
                   >
-                    {loading ? (
+                    {!account ? (
+                      loading ? (
+                        <span className="btn-loading">
+                          <span className="spinner"></span>
+                          Connecting…
+                        </span>
+                      ) : (
+                        'Connect Wallet to Send'
+                      )
+                    ) : loading ? (
                       <span className="btn-loading">
                         <span className="spinner"></span>
                         Processing...
@@ -1400,21 +1446,34 @@ function App() {
               <aside className="sidebar">
                 <div className="sidebar-card">
                   <div className="sidebar-section-title">Wallet</div>
-                  <div className="sidebar-wallet">
-                    <div className="sidebar-wallet-address">
-                      <span className="wallet-status"></span>
-                      <span>{account.slice(0, 6)}...{account.slice(-4)}</span>
-                    </div>
-                    <div className="sidebar-balance">
-                      <div className="sidebar-balance-label">Balance</div>
-                      <div className="sidebar-balance-value">
-                        {parseFloat(balance || 0).toFixed(4)} <span>{nativeSymbol}</span>
+                  {account ? (
+                    <div className="sidebar-wallet">
+                      <div className="sidebar-wallet-address">
+                        <span className="wallet-status"></span>
+                        <span>{account.slice(0, 6)}...{account.slice(-4)}</span>
                       </div>
-                      {ethPrice && (
-                        <div className="sidebar-balance-usd">${(parseFloat(balance || 0) * ethPrice).toFixed(2)} USD</div>
-                      )}
+                      <div className="sidebar-balance">
+                        <div className="sidebar-balance-label">Balance</div>
+                        <div className="sidebar-balance-value">
+                          {parseFloat(balance || 0).toFixed(4)} <span>{nativeSymbol}</span>
+                        </div>
+                        {ethPrice && (
+                          <div className="sidebar-balance-usd">${(parseFloat(balance || 0) * ethPrice).toFixed(2)} USD</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="sidebar-wallet">
+                      <div className="sidebar-wallet-address disconnected">
+                        <span className="wallet-status off"></span>
+                        <span>Not connected</span>
+                      </div>
+                      <button className="btn-connect-inline" onClick={handleConnectWallet} disabled={loading}>
+                        {loading ? 'Connecting…' : 'Connect Wallet'}
+                      </button>
+                      <p className="sidebar-wallet-hint">Connect to load your balance and send your batch.</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="sidebar-card">
@@ -1440,7 +1499,7 @@ function App() {
                     </div>
                     <div className="sidebar-stat">
                       <span className="sidebar-stat-label">Network</span>
-                      <span className="sidebar-stat-value">{networkConfig.name}</span>
+                      <span className="sidebar-stat-value">{account ? networkConfig.name : 'Not connected'}</span>
                     </div>
                   </div>
                 </div>

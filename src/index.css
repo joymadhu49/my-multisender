@@ -3086,18 +3086,19 @@ p { line-height: 1.65; color: var(--text-secondary); }
 /* Hero Stats */
 .hero-stats {
   display: flex;
-  justify-content: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   align-items: center;
-  gap: var(--space-5);
-  margin-top: var(--space-8);
-  padding-top: var(--space-6);
+  gap: var(--space-5) var(--space-6);
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
   border-top: 1px solid var(--border);
 }
 
 .hero-stat {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 2px;
 }
 
@@ -3183,9 +3184,10 @@ p { line-height: 1.65; color: var(--text-secondary); }
 .section-subtitle {
   font-size: 1rem;
   color: var(--text-secondary);
-  margin-bottom: var(--space-8);
+  margin: 0 auto var(--space-8);
   line-height: 1.6;
   max-width: 60ch;
+  text-align: center;
 }
 
 .steps-row {
@@ -4533,4 +4535,131 @@ select:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* ============================================
+   UI/UX OVERHAUL — new components & states
+   ============================================ */
+
+/* Hero CTA helper note */
+.hero-actions-note {
+  margin: var(--space-3) 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+/* "How it works" step descriptions (data was previously dropped) */
+.step-desc {
+  margin: var(--space-2) 0 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+
+/* Feature card descriptions (data was previously dropped) */
+.feature-card p,
+.feature-desc {
+  margin: var(--space-3) 0 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+
+/* Final CTA supporting line */
+.cta-subtitle {
+  margin: var(--space-3) auto var(--space-6);
+  max-width: 56ch;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* Header "Connect Wallet" button — shown when no wallet is connected */
+.header-connect {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: 1px solid transparent;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  font-family: inherit;
+}
+
+.header-connect:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glow);
+}
+
+.header-connect:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Preview-mode chip in the dashboard meta row (no wallet connected) */
+.dashboard-chip.preview {
+  color: var(--accent);
+  border-color: var(--border-focus);
+  background: var(--accent-muted);
+  font-weight: 600;
+}
+
+/* Disconnected wallet state in the sidebar */
+.sidebar-wallet-address.disconnected {
+  color: var(--text-tertiary);
+}
+
+.sidebar-wallet-address .wallet-status.off {
+  background: var(--text-muted);
+  box-shadow: 0 0 0 3px var(--border-subtle);
+}
+
+.btn-connect-inline {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  font-family: inherit;
+}
+
+.btn-connect-inline:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glow);
+}
+
+.btn-connect-inline:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.sidebar-wallet-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .header-connect {
+    padding: 7px 12px;
+    font-size: 0.75rem;
+  }
 }
