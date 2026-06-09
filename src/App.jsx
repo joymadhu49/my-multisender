@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { ethers } from 'ethers'
 import { MULTISENDER_ADDRESSES, SUPPORTED_CHAINS, getContractAddress, MULTISENDER_ABI, ERC20_ABI } from './contract'
 import { getNativePrice, getTokenPrice } from './priceApi'
@@ -71,6 +72,9 @@ function App() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [showNetworkSwitcher, setShowNetworkSwitcher] = useState(false)
+  const networkBtnRef = useRef(null)
+  // Position for the portaled network dropdown on desktop (null on mobile → CSS bottom-sheet)
+  const [netDropdownPos, setNetDropdownPos] = useState(null)
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
 
   // Whether the visitor has entered the app (send console) without yet connecting a wallet.
@@ -235,6 +239,27 @@ function App() {
     localStorage.setItem('theme', newTheme)
   }
 
+  // Open/close the network switcher. On desktop we anchor the portaled dropdown
+  // to the button via its measured rect; on mobile we leave position to the CSS
+  // bottom-sheet (netDropdownPos = null) so it sits flush at the viewport bottom.
+  const toggleNetworkSwitcher = () => {
+    if (showNetworkSwitcher) {
+      setShowNetworkSwitcher(false)
+      return
+    }
+    const isMobileSheet = typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
+    if (!isMobileSheet && networkBtnRef.current) {
+      const rect = networkBtnRef.current.getBoundingClientRect()
+      setNetDropdownPos({
+        top: Math.round(rect.bottom + 8),
+        right: Math.round(window.innerWidth - rect.right),
+      })
+    } else {
+      setNetDropdownPos(null)
+    }
+    setShowNetworkSwitcher(true)
+  }
+
   // Apply theme to body + keep the AppKit modal in sync
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -316,7 +341,7 @@ function App() {
         if (showNetworkSwitcher) setShowNetworkSwitcher(false)
       }
     }
-    if (showConfirmation) {
+    if (showConfirmation || showNetworkSwitcher) {
       document.body.style.overflow = 'hidden'
     }
     document.addEventListener('keydown', handleKey)
@@ -961,8 +986,9 @@ function App() {
             <>
               <div className="network-switcher">
                 <button
+                  ref={networkBtnRef}
                   className="network-switcher-btn"
-                  onClick={() => setShowNetworkSwitcher(!showNetworkSwitcher)}
+                  onClick={toggleNetworkSwitcher}
                   aria-haspopup="listbox"
                   aria-expanded={showNetworkSwitcher}
                   aria-label={`Network: ${network}. Click to switch.`}
@@ -975,10 +1001,14 @@ function App() {
                     <path d="M6 9l6 6 6-6"/>
                   </svg>
                 </button>
-                {showNetworkSwitcher && (
+                {showNetworkSwitcher && createPortal(
                   <>
                     <div className="network-switcher-backdrop" onClick={() => setShowNetworkSwitcher(false)}></div>
-                    <div className="network-switcher-dropdown">
+                    <div
+                      className="network-switcher-dropdown"
+                      style={netDropdownPos ? { top: `${netDropdownPos.top}px`, right: `${netDropdownPos.right}px` } : undefined}
+                      role="listbox"
+                    >
                       <div className="network-switcher-title">Switch Network</div>
                       {Object.entries(NETWORK_CONFIG).map(([id, config]) => (
                         <button
@@ -996,7 +1026,8 @@ function App() {
                         </button>
                       ))}
                     </div>
-                  </>
+                  </>,
+                  document.body
                 )}
               </div>
                <button className="wallet-pill" onClick={handleDisconnectWallet} title="Disconnect wallet">

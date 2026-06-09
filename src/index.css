@@ -621,15 +621,17 @@ p { line-height: 1.65; color: var(--text-secondary); }
 }
 
 .network-switcher-dropdown {
-  position: absolute;
-  top: calc(100% + var(--space-2));
-  right: 0;
+  position: fixed;
+  /* Desktop coords come from an inline style (button rect); these are fallbacks.
+     The mobile bottom-sheet override (max-width: 640px) replaces top/right. */
+  top: 64px;
+  right: 16px;
   min-width: 260px;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-2);
-  z-index: 9999;
+  z-index: 10000;
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(20px);
 }
