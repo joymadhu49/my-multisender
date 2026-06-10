@@ -1856,32 +1856,43 @@ function App() {
             <footer className="footer-main">
               <div className="footer-top">
                 <div className="footer-brand">
-                  <img src="/logo-header.png" alt="" className="footer-logo" />
-                  <span className="footer-name">MultiSend</span>
+                  <div className="footer-brand-row">
+                    <img src="/logo-header.png" alt="" className="footer-logo" />
+                    <span className="footer-name">MultiSend</span>
+                  </div>
                   <p className="footer-tagline">Batch native and ERC-20 transfers in one transaction.</p>
                 </div>
-                <div className="footer-links">
-                  <div className="footer-col">
-                    <h4>Contracts</h4>
-                    <a href="#contracts">All networks</a>
+                <div className="footer-contracts">
+                  <span className="footer-label" id="footer-contracts-label">Verified contracts</span>
+                  <div className="footer-chips" aria-labelledby="footer-contracts-label">
+                    <a className="footer-chip" href="#contracts">All networks</a>
                     {Object.entries(MULTISENDER_ADDRESSES).map(([id, addr]) => {
                       const cfg = NETWORK_CONFIG[Number(id)]
                       if (!cfg) return null
                       return (
-                        <a key={id} href={`${cfg.explorer}/address/${addr}`} target="_blank" rel="noopener noreferrer">
-                          {cfg.name}{Number(id) === 11155111 ? ' (testnet)' : ''}
+                        <a
+                          key={id}
+                          className="footer-chip"
+                          href={`${cfg.explorer}/address/${addr}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`${cfg.name} contract on block explorer`}
+                        >
+                          {cfg.name}
+                          {Number(id) === 11155111 && <span className="footer-chip-tag">testnet</span>}
                         </a>
                       )
                     })}
                   </div>
-                  <div className="footer-col">
-                    <h4>Community</h4>
-                    <a href="https://x.com/zx_joy_" target="_blank" rel="noopener noreferrer">@zx_joy_ on X</a>
-                  </div>
                 </div>
               </div>
               <div className="footer-bottom">
-                MultiSend is non-custodial: every transaction is signed in your own wallet and funds move directly to recipients.
+                <span className="footer-note">Non-custodial — every transaction is signed in your own wallet and funds move directly to recipients.</span>
+                <span className="footer-meta">
+                  © MultiSend
+                  <span aria-hidden="true">·</span>
+                  <a href="https://x.com/zx_joy_" target="_blank" rel="noopener noreferrer">@zx_joy_ on X</a>
+                </span>
               </div>
             </footer>
           </div>
