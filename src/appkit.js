@@ -24,7 +24,7 @@ const metadata = {
   name: 'MultiSend',
   description: 'Send a native token or ERC20 to many wallets in a single transaction.',
   url: typeof window !== 'undefined' ? window.location.origin : 'https://multisend.app',
-  icons: [typeof window !== 'undefined' ? `${window.location.origin}/logo.png` : '/logo.png'],
+  icons: [typeof window !== 'undefined' ? `${window.location.origin}/logo-header.png` : '/logo-header.png'],
 }
 
 // Single AppKit instance. Exported so the app can sync theme (setThemeMode).

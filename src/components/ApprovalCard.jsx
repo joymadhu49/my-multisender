@@ -1,14 +1,20 @@
 /**
  * ApprovalCard Component
- * Prominent card showing token approval requirement with action button
- * Manages states: ready, approving, approved
- * 
+ * Step indicator card for the ERC-20 approval step (step 1 of 2)
+ * Manages stages: idle, wallet (confirm in wallet), pending (on-chain), approved
+ *
  * Props:
  *   - tokenSymbol: string - Token symbol (USDC, DAI, etc.)
- *   - isApproving: boolean - Loading state
- *   - isApproved: boolean - Approved state (shows checkmark)
+ *   - isApproving: boolean - Legacy loading state (derives stage 'wallet')
+ *   - isApproved: boolean - Legacy approved state (derives stage 'approved')
  *   - onApprove: () => void - Callback when approve button clicked
  *   - onDismiss?: () => void - Optional callback to dismiss after approval
+ *   - approvalAmount?: string - Human-readable allowance, e.g. "120.5 USDC"
+ *   - unlimited?: boolean - Unlimited-allowance checkbox state
+ *   - onUnlimitedChange?: (v: boolean) => void - Checkbox handler (checkbox hidden when absent)
+ *   - txHash?: string|null - Approval transaction hash
+ *   - explorerUrl?: string|null - Explorer base URL; link = explorerUrl + '/tx/' + txHash
+ *   - stage?: 'idle'|'wallet'|'pending'|'approved' - Explicit stage; defaults derive from legacy props
  */
 
 export function ApprovalCard({
@@ -17,19 +23,50 @@ export function ApprovalCard({
   isApproved = false,
   onApprove,
   onDismiss,
+  approvalAmount,
+  unlimited = false,
+  onUnlimitedChange,
+  txHash = null,
+  explorerUrl = null,
+  stage,
   className = ''
 }) {
+  // Back-compat: derive stage from legacy isApproving/isApproved when not provided
+  const resolvedStage = stage ?? (isApproved ? 'approved' : isApproving ? 'wallet' : 'idle')
+  const approved = resolvedStage === 'approved'
+  const busy = resolvedStage === 'wallet' || resolvedStage === 'pending'
+  const showTxLink = Boolean(
+    txHash && explorerUrl && (resolvedStage === 'pending' || approved)
+  )
+
+  const buttonLabel = unlimited
+    ? `Approve unlimited ${tokenSymbol}`
+    : approvalAmount
+      ? `Approve ${approvalAmount}`
+      : `Approve ${tokenSymbol}`
+
+  const stageLabel = resolvedStage === 'wallet'
+    ? 'Confirm in your wallet…'
+    : 'Approving — pending on-chain…'
+
+  const baseDescription = `ERC-20 tokens require a one-time approval transaction before the batch send (step 2).`
+  const allowanceDetail = unlimited
+    ? ` An unlimited ${tokenSymbol} allowance will be requested, so future sends skip this approval.`
+    : approvalAmount
+      ? ` This approval covers ${approvalAmount}.`
+      : ''
+
   return (
-    <div className={`approval-card ${isApproved ? 'approved' : ''} ${className}`}>
+    <div className={`approval-card ${approved ? 'approved' : ''} ${className}`}>
       <div className="approval-content">
         {/* Icon */}
         <div className="approval-icon">
-          {isApproved ? (
+          {approved ? (
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
             </svg>
-          ) : isApproving ? (
-            <svg className="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          ) : busy ? (
+            <svg className="ac-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" opacity="0.2" />
               <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
             </svg>
@@ -43,43 +80,66 @@ export function ApprovalCard({
         {/* Text Content */}
         <div className="approval-text">
           <h3 className="approval-title">
-            {isApproved
-              ? `${tokenSymbol} Approved`
-              : 'Token Approval Required'}
+            {approved
+              ? `Step 1 of 2 · ${tokenSymbol} Approved`
+              : `Step 1 of 2 · Approve ${tokenSymbol}`}
           </h3>
           <p className="approval-description">
-            {isApproved
-              ? `You can now send ${tokenSymbol} to multiple recipients`
-              : `You need to approve ${tokenSymbol} before sending. This is a one-time action.`}
+            {approved
+              ? `Approval confirmed. You can now send ${tokenSymbol} to multiple recipients (step 2).`
+              : `${baseDescription}${allowanceDetail}`}
           </p>
+
+          {/* Unlimited allowance opt-in */}
+          {!approved && typeof onUnlimitedChange === 'function' && (
+            <label className="approval-unlimited">
+              <input
+                type="checkbox"
+                checked={unlimited}
+                onChange={(e) => onUnlimitedChange(e.target.checked)}
+                disabled={busy}
+              />
+              <span>Approve unlimited instead (skips future approvals)</span>
+            </label>
+          )}
+
+          {/* Approval transaction link */}
+          {showTxLink && (
+            <a
+              className="approval-tx-link"
+              href={`${explorerUrl}/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View approval transaction ↗
+            </a>
+          )}
         </div>
 
         {/* Action Button */}
-        {!isApproved && (
+        {!approved && (
           <button
             className="approval-button"
             onClick={onApprove}
-            disabled={isApproving}
-            aria-busy={isApproving}
+            disabled={busy}
+            aria-busy={busy}
           >
-            {isApproving ? (
+            {busy ? (
               <>
                 <svg className="button-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" opacity="0.2" />
                   <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
                 </svg>
-                <span>Approving...</span>
+                <span>{stageLabel}</span>
               </>
             ) : (
-              <>
-                <span>Approve {tokenSymbol}</span>
-              </>
+              <span>{buttonLabel}</span>
             )}
           </button>
         )}
 
         {/* Approved State - Dismiss Button */}
-        {isApproved && onDismiss && (
+        {approved && onDismiss && (
           <button
             className="approval-dismiss"
             onClick={onDismiss}
@@ -99,10 +159,9 @@ export function ApprovalCard({
           background: linear-gradient(
             135deg,
             var(--warning-muted) 0%,
-            rgba(255, 170, 0, 0.04) 100%
+            color-mix(in srgb, var(--warning) 4%, transparent) 100%
           );
           border: 1px solid var(--warning);
-          border-opacity: 0.3;
           margin-bottom: var(--space-6);
           animation: slideIn 0.3s ease-out;
         }
@@ -111,7 +170,7 @@ export function ApprovalCard({
           background: linear-gradient(
             135deg,
             var(--success-muted) 0%,
-            rgba(0, 255, 136, 0.04) 100%
+            color-mix(in srgb, var(--success) 4%, transparent) 100%
           );
           border-color: var(--success);
           animation: pulse 0.5s ease-out;
@@ -146,8 +205,12 @@ export function ApprovalCard({
           height: 24px;
         }
 
-        .approval-icon .spinner {
-          animation: spin 2s linear infinite;
+        /* Self-contained spinner; .ac-spinner avoids the global .spinner border ring */
+        .ac-spinner {
+          width: 24px;
+          height: 24px;
+          border: none;
+          animation: ac-spin 2s linear infinite;
         }
 
         .approval-text {
@@ -171,6 +234,48 @@ export function ApprovalCard({
           line-height: 1.5;
         }
 
+        .approval-unlimited {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--space-2);
+          font-size: 0.8125rem;
+          color: var(--text-secondary);
+          cursor: pointer;
+          user-select: none;
+          width: fit-content;
+        }
+
+        .approval-unlimited input {
+          width: 14px;
+          height: 14px;
+          margin: 0;
+          flex-shrink: 0;
+          accent-color: var(--warning);
+          cursor: pointer;
+        }
+
+        .approval-unlimited input:disabled {
+          cursor: not-allowed;
+        }
+
+        .approval-tx-link {
+          font-size: 0.8125rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          width: fit-content;
+          transition: color 0.15s ease;
+        }
+
+        .approval-tx-link:hover {
+          color: var(--text-primary);
+        }
+
+        .approval-card.approved .approval-tx-link {
+          color: var(--success);
+        }
+
         .approval-button {
           flex-shrink: 0;
           display: flex;
@@ -190,9 +295,9 @@ export function ApprovalCard({
         }
 
         .approval-button:hover:not(:disabled) {
-          background: var(--accent-hover);
+          background: color-mix(in srgb, var(--warning) 90%, black);
           transform: translateY(-2px);
-          box-shadow: 0 8px 16px rgba(255, 170, 0, 0.3);
+          box-shadow: 0 8px 16px color-mix(in srgb, var(--warning) 30%, transparent);
         }
 
         .approval-button:disabled {
@@ -203,7 +308,7 @@ export function ApprovalCard({
         .button-spinner {
           width: 16px;
           height: 16px;
-          animation: spin 2s linear infinite;
+          animation: ac-spin 2s linear infinite;
         }
 
         .approval-dismiss {
@@ -213,7 +318,6 @@ export function ApprovalCard({
           background: transparent;
           color: var(--text-primary);
           border: 1px solid var(--success);
-          border-opacity: 0.3;
           font-weight: 600;
           font-size: 0.875rem;
           cursor: pointer;
@@ -246,9 +350,16 @@ export function ApprovalCard({
           }
         }
 
-        @keyframes spin {
+        @keyframes ac-spin {
           to {
             transform: rotate(360deg);
+          }
+        }
+
+        /* Touch targets */
+        @media (pointer: coarse) {
+          .approval-button {
+            min-height: 44px;
           }
         }
 
@@ -278,6 +389,7 @@ export function ApprovalCard({
             width: 100%;
             padding: var(--space-3) var(--space-4);
             font-size: 0.875rem;
+            white-space: normal;
           }
 
           .approval-dismiss {

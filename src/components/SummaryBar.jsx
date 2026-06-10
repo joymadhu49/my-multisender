@@ -1,13 +1,19 @@
 /**
  * SummaryBar Component
  * Sticky summary showing transaction preview (recipients, total, USD value)
- * 
+ *
+ * All internal classes are namespaced with an 'sb-' prefix so they cannot
+ * collide with legacy global styles (.summary-item, .summary-label, ...).
+ * The root keeps the 'summary-bar' class purely as an external styling hook
+ * (index.css targets `.summary-bar.dashboard-summary` via the className prop).
+ *
  * Props:
  *   - recipientCount: number
  *   - totalAmount: number
  *   - usdValue?: number
  *   - symbol: string (ETH, USDC, etc.)
  *   - isApprovalRequired?: boolean
+ *   - balanceWarning?: string|null (renders an amber inline warning chip with role="status")
  *   - className?: string
  */
 
@@ -17,26 +23,27 @@ export function SummaryBar({
   usdValue,
   symbol,
   isApprovalRequired = false,
+  balanceWarning = null,
   className = ''
 }) {
   return (
-    <div className={`summary-bar ${className}`}>
-      <div className="summary-container">
+    <div className={`sb-bar summary-bar ${className}`}>
+      <div className="sb-container">
         {/* Recipient Count */}
-        <div className="summary-item">
-          <span className="summary-label">Recipients</span>
-          <span className="summary-value">
+        <div className="sb-item">
+          <span className="sb-label">Recipients</span>
+          <span className="sb-value">
             {recipientCount}
           </span>
         </div>
 
         {/* Divider */}
-        <div className="summary-divider"></div>
+        <div className="sb-divider"></div>
 
         {/* Total Amount */}
-        <div className="summary-item highlighted">
-          <span className="summary-label">Total {symbol}</span>
-          <span className="summary-value primary">
+        <div className="sb-item sb-highlight">
+          <span className="sb-label">Total {symbol}</span>
+          <span className="sb-value">
             {totalAmount.toFixed(6)}
           </span>
         </div>
@@ -44,10 +51,10 @@ export function SummaryBar({
         {/* USD Value (if available) */}
         {usdValue !== undefined && usdValue > 0 && (
           <>
-            <div className="summary-divider"></div>
-            <div className="summary-item">
-              <span className="summary-label">USD Value</span>
-              <span className="summary-value">
+            <div className="sb-divider"></div>
+            <div className="sb-item">
+              <span className="sb-label">USD Value</span>
+              <span className="sb-value">
                 ${usdValue.toFixed(2)}
               </span>
             </div>
@@ -57,9 +64,9 @@ export function SummaryBar({
         {/* Approval Required Badge */}
         {isApprovalRequired && (
           <>
-            <div className="summary-divider"></div>
-            <div className="summary-badge warning">
-              <svg className="badge-icon" viewBox="0 0 24 24" fill="currentColor">
+            <div className="sb-divider"></div>
+            <div className="sb-badge sb-warning">
+              <svg className="sb-badge-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
               </svg>
               <span>Approval Required</span>
@@ -68,8 +75,18 @@ export function SummaryBar({
         )}
       </div>
 
+      {/* Balance Warning (e.g. "Total exceeds your balance (need 4.0 ETH, have 1.2 ETH)") */}
+      {balanceWarning && (
+        <div className="sb-balance-warning" role="status">
+          <svg className="sb-warning-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+          </svg>
+          <span>{balanceWarning}</span>
+        </div>
+      )}
+
       <style>{`
-        .summary-bar {
+        .sb-bar {
           position: sticky;
           top: 0;
           z-index: 40;
@@ -81,7 +98,7 @@ export function SummaryBar({
           margin: 0 0 var(--space-3) 0;
         }
 
-        .summary-container {
+        .sb-container {
           display: flex;
           align-items: center;
           gap: var(--space-5);
@@ -90,7 +107,8 @@ export function SummaryBar({
           -webkit-overflow-scrolling: touch;
         }
 
-        .summary-item {
+        .sb-item {
+          flex: none;
           display: flex;
           flex-direction: row;
           align-items: baseline;
@@ -98,7 +116,9 @@ export function SummaryBar({
           white-space: nowrap;
         }
 
-        .summary-label {
+        .sb-label {
+          display: inline;
+          margin: 0;
           font-size: 0.6875rem;
           text-transform: uppercase;
           letter-spacing: 0.1em;
@@ -106,7 +126,7 @@ export function SummaryBar({
           font-weight: 600;
         }
 
-        .summary-value {
+        .sb-value {
           font-size: 0.9375rem;
           font-weight: 600;
           color: var(--text-primary);
@@ -114,24 +134,19 @@ export function SummaryBar({
           font-family: 'JetBrains Mono', 'SF Mono', monospace;
         }
 
-        .summary-value.primary {
+        .sb-item.sb-highlight .sb-value {
           color: var(--accent);
-          background: none;
-          -webkit-text-fill-color: currentColor;
-          font-size: 0.9375rem;
         }
 
-        .summary-item.highlighted {
-          flex-grow: 0;
-        }
-
-        .summary-divider {
+        .sb-divider {
+          flex: none;
           width: 1px;
           height: 18px;
           background: var(--border-subtle);
         }
 
-        .summary-badge {
+        .sb-badge {
+          flex: none;
           display: flex;
           align-items: center;
           gap: var(--space-2);
@@ -144,69 +159,91 @@ export function SummaryBar({
           white-space: nowrap;
         }
 
-        .summary-badge.warning {
+        .sb-badge.sb-warning {
           background: var(--warning-muted);
           color: var(--warning);
         }
 
-        .badge-icon {
+        .sb-badge-icon {
+          flex: none;
           width: 14px;
           height: 14px;
         }
 
+        .sb-balance-warning {
+          display: inline-flex;
+          align-items: flex-start;
+          gap: var(--space-2);
+          margin-top: var(--space-2);
+          padding: var(--space-1) var(--space-3);
+          border-radius: var(--radius-md);
+          background: var(--warning-muted);
+          color: var(--warning);
+          font-size: 0.75rem;
+          font-weight: 500;
+          line-height: 1.5;
+        }
+
+        .sb-warning-icon {
+          flex: none;
+          width: 14px;
+          height: 14px;
+          margin-top: 2px;
+        }
+
         /* Responsive */
         @media (max-width: 640px) {
-          .summary-bar {
+          .sb-bar {
             padding: var(--space-3) var(--space-4);
             margin-bottom: var(--space-4);
           }
 
-          .summary-container {
+          .sb-container {
             gap: var(--space-3);
           }
 
-          .summary-label {
-            font-size: 0.6rem;
+          .sb-label {
+            font-size: 0.625rem;
           }
 
-          .summary-value {
+          .sb-value {
             font-size: 0.875rem;
           }
 
-          .summary-value.primary {
+          .sb-item.sb-highlight .sb-value {
             font-size: 1rem;
           }
 
-          .summary-divider {
+          .sb-divider {
             height: 20px;
           }
 
-          .summary-badge {
+          .sb-badge {
             font-size: 0.7rem;
             padding: var(--space-1) var(--space-2);
           }
 
-          .badge-icon {
+          .sb-badge-icon {
             width: 12px;
             height: 12px;
           }
         }
 
         /* Scrollbar styling */
-        .summary-container::-webkit-scrollbar {
+        .sb-container::-webkit-scrollbar {
           height: 4px;
         }
 
-        .summary-container::-webkit-scrollbar-track {
+        .sb-container::-webkit-scrollbar-track {
           background: transparent;
         }
 
-        .summary-container::-webkit-scrollbar-thumb {
+        .sb-container::-webkit-scrollbar-thumb {
           background: var(--accent-muted);
           border-radius: var(--radius-full);
         }
 
-        .summary-container::-webkit-scrollbar-thumb:hover {
+        .sb-container::-webkit-scrollbar-thumb:hover {
           background: var(--accent);
         }
       `}</style>

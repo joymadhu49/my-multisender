@@ -1,8 +1,46 @@
+import { useRef } from 'react';
+
 /**
  * ModeSelector — compact segmented control
  * Props: activeMode: 'same' | 'custom', onChange
  */
+const MODES = ['same', 'custom'];
+
 export function ModeSelector({ activeMode = 'same', onChange }) {
+  const btnRefs = useRef({});
+
+  const selectMode = (mode) => {
+    onChange(mode);
+    btnRefs.current[mode]?.focus();
+  };
+
+  const handleKeyDown = (event) => {
+    const currentIndex = MODES.indexOf(activeMode);
+    let nextIndex;
+
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        nextIndex = (currentIndex + 1) % MODES.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        nextIndex = (currentIndex - 1 + MODES.length) % MODES.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = MODES.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    selectMode(MODES[nextIndex]);
+  };
+
   return (
     <div className="mode-selector">
       <div className="mode-header">
@@ -14,13 +52,20 @@ export function ModeSelector({ activeMode = 'same', onChange }) {
         </span>
       </div>
 
-      <div className="mode-segmented" role="radiogroup" aria-label="Distribution mode">
+      <div
+        className="mode-segmented"
+        role="radiogroup"
+        aria-label="Distribution mode"
+        onKeyDown={handleKeyDown}
+      >
         <button
           type="button"
+          ref={(el) => { btnRefs.current.same = el; }}
           className={`mode-seg-btn ${activeMode === 'same' ? 'active' : ''}`}
           onClick={() => onChange('same')}
           role="radio"
           aria-checked={activeMode === 'same'}
+          tabIndex={activeMode === 'same' ? 0 : -1}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="3" y1="12" x2="21" y2="12"/>
@@ -29,10 +74,12 @@ export function ModeSelector({ activeMode = 'same', onChange }) {
         </button>
         <button
           type="button"
+          ref={(el) => { btnRefs.current.custom = el; }}
           className={`mode-seg-btn ${activeMode === 'custom' ? 'active' : ''}`}
           onClick={() => onChange('custom')}
           role="radio"
           aria-checked={activeMode === 'custom'}
+          tabIndex={activeMode === 'custom' ? 0 : -1}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M3 6h18M6 12h12M9 18h6"/>
@@ -80,7 +127,7 @@ export function ModeSelector({ activeMode = 'same', onChange }) {
           gap: 6px;
           min-height: 32px;
           padding: 0 12px;
-          border-radius: 7px;
+          border-radius: var(--radius-sm);
           border: 1px solid transparent;
           background: transparent;
           color: var(--text-tertiary);
@@ -97,6 +144,9 @@ export function ModeSelector({ activeMode = 'same', onChange }) {
           box-shadow: var(--shadow-sm);
         }
         .mode-seg-btn svg { width: 14px; height: 14px; }
+        @media (pointer: coarse) {
+          .mode-seg-btn { min-height: 44px; }
+        }
         @media (max-width: 640px) {
           .mode-selector { flex-direction: column; align-items: stretch; }
           .mode-segmented { width: 100%; }
