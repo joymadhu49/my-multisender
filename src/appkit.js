@@ -16,7 +16,7 @@ if (!projectId) {
   )
 }
 
-// Order mirrors the app's NETWORK_CONFIG / supported chains:
+// Order mirrors the app's NETWORKS / supported chains:
 // Ethereum, BNB Chain, Base, Polygon, Arbitrum, Optimism, Sepolia.
 export const networks = [mainnet, bsc, base, polygon, arbitrum, optimism, sepolia]
 
