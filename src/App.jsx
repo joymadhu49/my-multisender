@@ -208,7 +208,7 @@ function App() {
   const netDropdownRef = useRef(null)
   const [netFocusIndex, setNetFocusIndex] = useState(0)
   const netWasOpenRef = useRef(false)
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
 
   // Whether the visitor has entered the app (send console) without yet connecting a wallet.
   // Lets users explore and build a batch in a preview state; connecting is required only at send time.
@@ -2389,7 +2389,7 @@ function App() {
                 </div>
 
                 <div className="confirmation-warning">
-                  ⚠️ This action is irreversible. Please verify the details above.
+                  Transfers are irreversible once confirmed — take a moment to verify the details above.
                 </div>
               </div>
 
