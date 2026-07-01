@@ -291,19 +291,17 @@ export function RecipientInput({
           padding: var(--space-3) var(--space-4);
           border-radius: var(--radius-md);
           background: var(--accent);
-          color: white;
+          color: var(--text-on-accent, #fff);
           border: none;
-          font-weight: 600;
+          font-weight: 500;
           font-size: 0.875rem;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: background 0.15s ease;
           white-space: nowrap;
         }
 
         .quick-add-button:hover:not(:disabled) {
           background: var(--accent-hover);
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
         }
 
         .quick-add-button:disabled {

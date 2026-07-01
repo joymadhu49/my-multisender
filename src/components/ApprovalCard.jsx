@@ -156,23 +156,15 @@ export function ApprovalCard({
           gap: var(--space-4);
           padding: var(--space-5);
           border-radius: var(--radius-lg);
-          background: linear-gradient(
-            135deg,
-            var(--warning-muted) 0%,
-            color-mix(in srgb, var(--warning) 4%, transparent) 100%
-          );
-          border: 1px solid var(--warning);
+          background: var(--warning-muted);
+          border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
           margin-bottom: var(--space-6);
           animation: slideIn 0.3s ease-out;
         }
 
         .approval-card.approved {
-          background: linear-gradient(
-            135deg,
-            var(--success-muted) 0%,
-            color-mix(in srgb, var(--success) 4%, transparent) 100%
-          );
-          border-color: var(--success);
+          background: var(--success-muted);
+          border-color: color-mix(in srgb, var(--success) 35%, transparent);
           animation: pulse 0.5s ease-out;
         }
 
