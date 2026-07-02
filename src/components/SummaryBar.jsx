@@ -88,14 +88,15 @@ export function SummaryBar({
       <style>{`
         .sb-bar {
           position: sticky;
-          top: 0;
+          top: 68px;
           z-index: 40;
           width: 100%;
-          background: var(--bg-surface);
-          border-bottom: 1px solid var(--border-subtle);
-          backdrop-filter: blur(10px);
-          padding: 10px var(--space-4);
-          margin: 0 0 var(--space-3) 0;
+          background: var(--bg-raised);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-sm);
+          padding: var(--space-3) var(--space-5);
+          margin: 0;
         }
 
         .sb-container {
