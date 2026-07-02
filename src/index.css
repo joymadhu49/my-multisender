@@ -76,10 +76,10 @@
 }
 
 [data-theme='dark'] {
-  --bg-base: #161511;
-  --bg-raised: #1d1b16;
-  --bg-surface: #1d1b16;
-  --bg-elevated: #262319;
+  --bg-base: #151410;
+  --bg-raised: #201e18;
+  --bg-surface: #201e18;
+  --bg-elevated: #2a271f;
   --bg-overlay: rgba(10, 9, 7, 0.6);
 
   --text-primary: #ece8dd;
@@ -103,9 +103,9 @@
   --error: #d3695c;
   --error-muted: rgba(211, 105, 92, 0.1);
 
-  --border: #37332a;
-  --border-subtle: #2b2820;
-  --border-strong: #4a4537;
+  --border: #3b372c;
+  --border-subtle: #2f2c23;
+  --border-strong: #504a3b;
   --border-focus: rgba(77, 181, 132, 0.5);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -1826,75 +1826,171 @@ button {
   to { transform: rotate(360deg); }
 }
 
-/* Post-send result panel */
+/* Post-send result panel — a transaction receipt */
 
-.tx-result-panel {
-  text-align: center;
-  padding: var(--space-9) var(--space-7);
+.tx-result-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .tx-result-icon {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto var(--space-4);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--success-muted);
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
   border-radius: 50%;
   color: var(--success);
 }
 
 .tx-result-icon svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 .tx-result-title {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 550;
   color: var(--text-primary);
-  margin-bottom: var(--space-2);
 }
 
 .tx-result-summary {
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   color: var(--text-tertiary);
-  margin-bottom: var(--space-4);
+  margin-top: 2px;
 }
 
-.tx-result-summary strong {
+.tx-receipt {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.tx-receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+}
+
+.tx-receipt-row:not(:last-child) {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tx-receipt-label {
+  font-size: 0.8438rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.tx-receipt-value {
+  font-size: 0.8438rem;
+  font-weight: 500;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.tx-receipt-value.strong {
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
-.tx-result-link {
-  display: inline-block;
+.tx-receipt-sub {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.8125rem;
+}
+
+.tx-receipt-value.mono {
+  font-family: var(--font-mono);
+  font-size: 0.7813rem;
+  font-weight: 400;
+}
+
+.tx-receipt-value.mono a {
   color: var(--accent);
-  font-size: 0.875rem;
-  font-weight: 500;
   text-decoration: none;
+}
+
+.tx-receipt-value.mono a:hover {
+  text-decoration: underline;
+}
+
+.tx-receipt-recipients {
   margin-bottom: var(--space-6);
 }
 
-.tx-result-link:hover {
-  text-decoration: underline;
+.tx-receipt-caption {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-2);
+}
+
+.tx-receipt-list {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-4);
+}
+
+.tx-receipt-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.tx-receipt-list-row:not(:last-child) {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.tx-receipt-addr {
+  color: var(--text-secondary);
+}
+
+.tx-receipt-amt {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tx-receipt-list-more {
+  padding: var(--space-2) 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-family: var(--font-ui);
 }
 
 .tx-result-actions {
   display: flex;
-  justify-content: center;
   gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .tx-result-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
+  text-decoration: none;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 

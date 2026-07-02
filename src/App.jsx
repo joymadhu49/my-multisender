@@ -214,6 +214,38 @@ function App() {
   // Lets users explore and build a batch in a preview state; connecting is required only at send time.
   const [entered, setEntered] = useState(false)
 
+  // Dev-only: `?mock=receipt` renders the post-send receipt with sample data
+  // so the confirmed state can be styled without sending a real transaction.
+  // Stripped from production builds by the DEV guard.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    if (new URLSearchParams(window.location.search).get('mock') !== 'receipt') return
+    setEntered(true)
+    // Deferred so mount-time effects (e.g. the chainId reset) can't clobber it
+    const timer = setTimeout(() => setTxStatus({
+      stage: 'confirmed',
+      hash: '0x8f4e2a1b9c3d5e7f0a2b4c6d8e1f3a5b7c9d0e2f4a6b8c1d3e5f7a9b0c2d4e6f',
+      explorerBase: 'https://basescan.org',
+      message: null,
+      total: 1.25,
+      symbol: 'ETH',
+      count: 6,
+      usdTotal: 4262.5,
+      network: 'Base',
+      contractAddress: '0x41b5f3a2c8d9e0b1a7c6d5e4f3a2b1c0d9e8D851',
+      recipients: [
+        '0x742d35Cc6634C0532925a3b844Bc9e7595f5bE91',
+        '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B',
+        '0x66f820a414680B5bcda5eECA5dea238543F42054',
+        '0x1f9090aaE28b8a3dCeaDf281B0F12828e676c326',
+        '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE',
+        '0xDA9dfA130Df4dE4673b89022EE50ff26f6EA73Cf',
+      ],
+      amounts: ['0.2083', '0.2083', '0.2083', '0.2083', '0.2083', '0.2083'],
+    }), 300)
+    return () => clearTimeout(timer)
+  }, [])
+
   // FAQ toggle
   const [openFaq, setOpenFaq] = useState(null)
 
@@ -953,6 +985,11 @@ function App() {
         total,
         symbol: nativeSymbol,
         count: addrs.length,
+        usdTotal: ethPrice ? total * ethPrice : null,
+        network: getCurrentNetworkConfig().name,
+        contractAddress,
+        recipients: addrs,
+        amounts,
       })
       // Refresh failures must not flip a confirmed tx into a 'failed' status
       try { await updateBalance(account) } catch (e) { console.error('Balance refresh failed:', e) }
@@ -1222,6 +1259,11 @@ function App() {
         total,
         symbol: tokenInfo?.symbol || 'tokens',
         count: addrs.length,
+        usdTotal: tokenPrice ? total * tokenPrice : null,
+        network: getCurrentNetworkConfig().name,
+        contractAddress,
+        recipients: addrs,
+        amounts,
       })
       // Refresh failures must not flip a confirmed tx into a 'failed' status
       try { await loadTokenInfo() } catch (e) { console.error('Token refresh failed:', e) }
@@ -1874,26 +1916,97 @@ function App() {
                   /* Post-success result panel: replaces the still-armed send
                      card so one more click-through can't re-send the batch */
                   <div className="send-card send-card-modern tx-result-panel" role="status" aria-live="polite">
-                    <div className="tx-result-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
+                    <div className="tx-result-header">
+                      <div className="tx-result-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h2 className="tx-result-title">Batch sent</h2>
+                        <p className="tx-result-summary">
+                          Delivered to {txStatus.count} {txStatus.count === 1 ? 'address' : 'addresses'} in a single transaction.
+                        </p>
+                      </div>
                     </div>
-                    <h2 className="tx-result-title">Batch sent</h2>
-                    <p className="tx-result-summary">
-                      Sent <strong>{formatAmount(txStatus.total || 0)} {txStatus.symbol}</strong> to{' '}
-                      <strong>{txStatus.count} {txStatus.count === 1 ? 'address' : 'addresses'}</strong> in one transaction.
-                    </p>
-                    {txStatus.hash && txStatus.explorerBase && (
-                      <a
-                        className="tx-result-link"
-                        href={`${txStatus.explorerBase}/tx/${txStatus.hash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View transaction on explorer ↗
-                      </a>
+
+                    <div className="tx-receipt">
+                      <div className="tx-receipt-row">
+                        <span className="tx-receipt-label">Total sent</span>
+                        <span className="tx-receipt-value strong">
+                          {formatAmount(txStatus.total || 0)} {txStatus.symbol}
+                          {txStatus.usdTotal ? <span className="tx-receipt-sub"> · ${txStatus.usdTotal.toFixed(2)}</span> : null}
+                        </span>
+                      </div>
+                      <div className="tx-receipt-row">
+                        <span className="tx-receipt-label">Recipients</span>
+                        <span className="tx-receipt-value">{txStatus.count} {txStatus.count === 1 ? 'address' : 'addresses'}</span>
+                      </div>
+                      {txStatus.network && (
+                        <div className="tx-receipt-row">
+                          <span className="tx-receipt-label">Network</span>
+                          <span className="tx-receipt-value">{txStatus.network}</span>
+                        </div>
+                      )}
+                      {txStatus.contractAddress && (
+                        <div className="tx-receipt-row">
+                          <span className="tx-receipt-label">Contract</span>
+                          <span className="tx-receipt-value mono">
+                            {txStatus.explorerBase ? (
+                              <a
+                                href={`${txStatus.explorerBase}/address/${txStatus.contractAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {txStatus.contractAddress.slice(0, 8)}…{txStatus.contractAddress.slice(-6)}
+                              </a>
+                            ) : (
+                              <>{txStatus.contractAddress.slice(0, 8)}…{txStatus.contractAddress.slice(-6)}</>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {txStatus.hash && (
+                        <div className="tx-receipt-row">
+                          <span className="tx-receipt-label">Transaction</span>
+                          <span className="tx-receipt-value mono">
+                            {txStatus.explorerBase ? (
+                              <a
+                                href={`${txStatus.explorerBase}/tx/${txStatus.hash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {txStatus.hash.slice(0, 10)}…{txStatus.hash.slice(-8)} ↗
+                              </a>
+                            ) : (
+                              <>{txStatus.hash.slice(0, 10)}…{txStatus.hash.slice(-8)}</>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {Array.isArray(txStatus.recipients) && txStatus.recipients.length > 0 && (
+                      <div className="tx-receipt-recipients">
+                        <span className="tx-receipt-caption">Delivered to</span>
+                        <div className="tx-receipt-list">
+                          {txStatus.recipients.slice(0, 4).map((addr, i) => (
+                            <div key={addr} className="tx-receipt-list-row">
+                              <span className="tx-receipt-addr">{addr.slice(0, 10)}…{addr.slice(-8)}</span>
+                              <span className="tx-receipt-amt">
+                                {formatAmount(parseFloat(txStatus.amounts?.[i] ?? 0))} {txStatus.symbol}
+                              </span>
+                            </div>
+                          ))}
+                          {txStatus.recipients.length > 4 && (
+                            <div className="tx-receipt-list-more">
+                              +{txStatus.recipients.length - 4} more {txStatus.recipients.length - 4 === 1 ? 'recipient' : 'recipients'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
+
                     <div className="tx-result-actions">
                       <button className="tx-result-btn primary" onClick={startNewBatch}>
                         Start new batch
@@ -1901,6 +2014,16 @@ function App() {
                       <button className="tx-result-btn ghost" onClick={keepListAfterSend}>
                         Keep this list
                       </button>
+                      {txStatus.hash && txStatus.explorerBase && (
+                        <a
+                          className="tx-result-btn ghost"
+                          href={`${txStatus.explorerBase}/tx/${txStatus.hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View on explorer ↗
+                        </a>
+                      )}
                     </div>
                   </div>
                 ) : (
