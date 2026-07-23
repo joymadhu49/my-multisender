@@ -1653,7 +1653,7 @@ function App() {
                   Send to many wallets in <span className="hero-highlight">one transaction</span>.
                 </h1>
                 <p className="hero-subtitle">
-                  Batch native and ERC20 payouts across seven networks. Connect, paste, send.
+                  Batch native and ERC20 payouts across eight networks. Connect, paste, send.
                 </p>
                 <div className="hero-actions">
                   <button className="btn-hero" onClick={() => setEntered(true)}>
@@ -1722,6 +1722,7 @@ function App() {
                       <div className="chain-item">{NETWORK_LOGOS.arbitrum}<span>Arbitrum</span></div>
                       <div className="chain-item">{NETWORK_LOGOS.optimism}<span>Optimism</span></div>
                       <div className="chain-item">{NETWORK_LOGOS.bnb}<span>BNB</span></div>
+                      <div className="chain-item">{NETWORK_LOGOS.opbnb}<span>opBNB</span></div>
                       <div className="chain-item">{NETWORK_LOGOS.sepolia}<span>Sepolia <span className="chain-tag-testnet">Testnet</span></span></div>
                     </div>
                   ))}

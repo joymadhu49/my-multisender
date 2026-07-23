@@ -105,6 +105,21 @@ export const NETWORKS = {
       blockExplorerUrls: ['https://optimistic.etherscan.io'],
     },
   },
+  204: {
+    name: 'opBNB',
+    symbol: 'BNB',
+    explorer: 'https://opbnb.bscscan.com',
+    coingeckoId: 'binancecoin',
+    logo: 'opbnb',
+    rpcUrl: 'https://opbnb-mainnet-rpc.bnbchain.org',
+    nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+    chainParams: {
+      chainName: 'opBNB Mainnet',
+      rpcUrls: ['https://opbnb-mainnet-rpc.bnbchain.org'],
+      nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+      blockExplorerUrls: ['https://opbnb.bscscan.com'],
+    },
+  },
   11155111: {
     name: 'Sepolia',
     symbol: 'ETH',
@@ -189,6 +204,13 @@ const BaseLogo = (
   </svg>
 )
 
+const OpbnbLogo = (
+  <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="16" r="16" fill="#1E2026"/>
+    <path d="M12.116 14.404L16 10.52l3.886 3.886 2.26-2.26L16 6l-6.144 6.144 2.26 2.26zM6 16l2.26-2.26L10.52 16l-2.26 2.26L6 16zm6.116 1.596L16 21.48l3.886-3.886 2.26 2.259L16 26l-6.144-6.144-.003-.003 2.263-2.257zM21.48 16l2.26-2.26L26 16l-2.26 2.26L21.48 16zm-3.188-.002h.002L16 13.706l-2.173 2.173-.02.02-.122.122.115.115L16 18.294l2.293-2.293.002-.002-.003-.001z" fill="#F3BA2F"/>
+  </svg>
+)
+
 const SepoliaLogo = (
   <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="16" cy="16" r="16" fill="#627EEA"/>
@@ -208,5 +230,6 @@ export const NETWORK_LOGOS = {
   arbitrum: ArbitrumLogo,
   optimism: OptimismLogo,
   base: BaseLogo,
+  opbnb: OpbnbLogo,
   sepolia: SepoliaLogo,
 }

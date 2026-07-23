@@ -2,7 +2,7 @@
 // createAppKit must run once, at module scope, OUTSIDE any React component.
 import { createAppKit } from '@reown/appkit/react'
 import { EthersAdapter } from '@reown/appkit-adapter-ethers'
-import { mainnet, bsc, base, polygon, arbitrum, optimism, sepolia } from '@reown/appkit/networks'
+import { mainnet, bsc, base, polygon, arbitrum, optimism, opBNB, sepolia } from '@reown/appkit/networks'
 
 // Reown / WalletConnect Cloud project id — sourced from the environment.
 // Vite only exposes vars prefixed with VITE_ to the browser bundle.
@@ -17,8 +17,8 @@ if (!projectId) {
 }
 
 // Order mirrors the app's NETWORKS / supported chains:
-// Ethereum, BNB Chain, Base, Polygon, Arbitrum, Optimism, Sepolia.
-export const networks = [mainnet, bsc, base, polygon, arbitrum, optimism, sepolia]
+// Ethereum, BNB Chain, Base, Polygon, Arbitrum, Optimism, opBNB, Sepolia.
+export const networks = [mainnet, bsc, base, polygon, arbitrum, optimism, opBNB, sepolia]
 
 const metadata = {
   name: 'MultiSend',

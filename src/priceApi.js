@@ -45,6 +45,7 @@ const COINGECKO_PLATFORMS = {
   42161: 'arbitrum-one',   // Arbitrum
   10: 'optimistic-ethereum', // Optimism
   8453: 'base',            // Base
+  204: 'opbnb',            // opBNB
   11155111: 'ethereum',    // Sepolia (uses Ethereum platform)
 }
 
