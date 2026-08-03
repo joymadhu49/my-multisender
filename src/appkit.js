@@ -2,7 +2,8 @@
 // createAppKit must run once, at module scope, OUTSIDE any React component.
 import { createAppKit } from '@reown/appkit/react'
 import { EthersAdapter } from '@reown/appkit-adapter-ethers'
-import { mainnet, bsc, base, polygon, arbitrum, optimism, opBNB, sepolia } from '@reown/appkit/networks'
+import { SolanaAdapter } from '@reown/appkit-adapter-solana'
+import { mainnet, bsc, base, polygon, arbitrum, optimism, opBNB, sepolia, solana } from '@reown/appkit/networks'
 
 // Reown / WalletConnect Cloud project id — sourced from the environment.
 // Vite only exposes vars prefixed with VITE_ to the browser bundle.
@@ -17,8 +18,8 @@ if (!projectId) {
 }
 
 // Order mirrors the app's NETWORKS / supported chains:
-// Ethereum, BNB Chain, Base, Polygon, Arbitrum, Optimism, opBNB, Sepolia.
-export const networks = [mainnet, bsc, base, polygon, arbitrum, optimism, opBNB, sepolia]
+// Ethereum, BNB Chain, Base, Polygon, Arbitrum, Optimism, opBNB, Sepolia, Solana.
+export const networks = [mainnet, bsc, base, polygon, arbitrum, optimism, opBNB, sepolia, solana]
 
 const metadata = {
   name: 'MultiSend',
@@ -29,7 +30,9 @@ const metadata = {
 
 // Single AppKit instance. Exported so the app can sync theme (setThemeMode).
 export const appkit = createAppKit({
-  adapters: [new EthersAdapter()],
+  // SolanaAdapter picks up Wallet Standard wallets (Phantom, Solflare, …)
+  // automatically; WalletConnect-based Solana wallets come via the modal.
+  adapters: [new EthersAdapter(), new SolanaAdapter()],
   networks,
   projectId,
   metadata,

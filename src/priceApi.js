@@ -47,6 +47,8 @@ const COINGECKO_PLATFORMS = {
   8453: 'base',            // Base
   204: 'opbnb',            // opBNB
   11155111: 'ethereum',    // Sepolia (uses Ethereum platform)
+  // Solana mainnet — keyed by the AppKit chain id string (see src/solana.js)
+  '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp': 'solana',
 }
 
 export async function getTokenPrice(contractAddress, chainId = 1, currency = 'usd') {
@@ -70,7 +72,8 @@ export async function getTokenPrice(contractAddress, chainId = 1, currency = 'us
     }
     
     const data = await response.json()
-    const price = data[contractAddress.toLowerCase()]?.[currency]
+    // EVM addresses come back lowercased; Solana mints are case-sensitive
+    const price = (data[contractAddress] ?? data[contractAddress.toLowerCase()])?.[currency]
 
     if (!price || price === 0) {
       console.warn(`Price not found for token ${contractAddress} on ${platform}`)
