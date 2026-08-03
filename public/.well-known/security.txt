@@ -1,0 +1,5 @@
+Contact: https://x.com/zx_joy_
+Contact: https://github.com/joymadhu49/my-multisender/issues
+Canonical: https://multisender-eth.xyz/.well-known/security.txt
+Preferred-Languages: en
+Expires: 2027-08-01T00:00:00.000Z
