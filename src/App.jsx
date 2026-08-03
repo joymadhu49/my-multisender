@@ -1934,7 +1934,11 @@ function App() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 <span>Verified · Non-custodial</span>
               </div>
-              <p className="contract-links-note">Inspect the deployed MultiSend contract on every supported network:</p>
+              <p className="contract-links-note">
+                The full source code is public on{' '}
+                <a href="https://github.com/joymadhu49/my-multisender" target="_blank" rel="noopener noreferrer">GitHub</a>
+                {' '}— inspect the deployed MultiSend contract on every supported network:
+              </p>
               <div className="contract-links">
                 {Object.entries(MULTISENDER_ADDRESSES).map(([id, addr]) => {
                   const cfg = NETWORKS[Number(id)]
@@ -2029,6 +2033,8 @@ function App() {
                   © MultiSend
                   <span aria-hidden="true">·</span>
                   <a href="https://x.com/zx_joy_" target="_blank" rel="noopener noreferrer">@zx_joy_ on X</a>
+                  <span aria-hidden="true">·</span>
+                  <a href="https://github.com/joymadhu49/my-multisender" target="_blank" rel="noopener noreferrer">Open source on GitHub</a>
                 </span>
               </div>
             </footer>
