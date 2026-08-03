@@ -6,7 +6,17 @@ import { APP_CONFIG } from './config'
 import { NETWORKS, NETWORK_LOGOS, getNetwork } from './networks'
 import { getNativePrice, getTokenPrice } from './priceApi'
 import { useAppKit, useAppKitAccount, useAppKitNetwork, useAppKitProvider, useDisconnect } from '@reown/appkit/react'
-import { appkit } from './appkit'
+import { appkit, networks as appkitNetworks } from './appkit'
+import {
+  isSolanaChain,
+  isValidSolanaAddress,
+  getSolBalance,
+  getSplTokenInfo,
+  buildSolBatchTxs,
+  buildSplBatchTxs,
+  estimateSolanaFees,
+  sendSolanaBatch,
+} from './solana'
 import SummaryBar from './components/SummaryBar'
 import ModeSelector from './components/ModeSelector'
 import RecipientInput from './components/RecipientInput'
@@ -21,9 +31,14 @@ const parseError = (err) => {
     return 'Transaction cancelled'
   }
 
-  // Insufficient funds
-  if (message.includes('insufficient funds') || message.includes('Insufficient funds')) {
-    return 'Insufficient funds for gas fees'
+  // Insufficient funds (EVM gas / Solana lamports)
+  if (message.includes('insufficient funds') || message.includes('Insufficient funds') || message.includes('insufficient lamports')) {
+    return 'Insufficient funds for network fees'
+  }
+
+  // Solana: blockhash expired before the transaction landed
+  if (message.includes('block height exceeded') || message.includes('Blockhash not found')) {
+    return 'Transaction expired before confirming — please try again'
   }
 
   // Gas estimation failed
@@ -108,7 +123,9 @@ const IDLE_APPROVAL_STATUS = { stage: 'idle', hash: null, explorerBase: null }
 // Parse addresses only (same-amount mode). Pure: returns per-line details so
 // dropped rows can be surfaced instead of silently counted.
 // details: [{ line, raw, reason }] with 1-based line numbers matching the textarea.
-const parseAddressList = (text) => {
+// isValidAddress/normalize are chain-aware: EVM (hex, case-insensitive) vs
+// Solana (base58, case-SENSITIVE — never lowercased for dedup).
+const parseAddressList = (text, isValidAddress, normalize) => {
   const result = { addresses: [], details: [] }
   if (!text || !text.trim()) return result
   const seen = new Set()
@@ -117,8 +134,8 @@ const parseAddressList = (text) => {
     if (!line) return
     const address = line.split(/[,\s\t]+/)[0].trim()
     if (!address) return
-    if (ethers.isAddress(address)) {
-      const normalized = address.toLowerCase()
+    if (isValidAddress(address)) {
+      const normalized = normalize(address)
       if (seen.has(normalized)) {
         result.details.push({ line: idx + 1, raw: line, reason: 'duplicate' })
       } else {
@@ -135,7 +152,7 @@ const parseAddressList = (text) => {
 // Parse address + amount pairs (custom mode). Pure: first occurrence of a
 // duplicate address wins; a duplicate carrying a DIFFERENT amount is flagged
 // as 'duplicate-conflict' so the user can spot silently-dropped payouts.
-const parseRecipientList = (text) => {
+const parseRecipientList = (text, isValidAddress, normalize) => {
   const result = { recipients: [], amounts: [], details: [] }
   if (!text || !text.trim()) return result
   const seen = new Map() // normalized address -> first amount (number)
@@ -144,7 +161,7 @@ const parseRecipientList = (text) => {
     if (!line) return
     const parts = line.split(/[,\s\t]+/).map(p => p.trim()).filter(p => p)
     if (parts.length === 0) return
-    if (!ethers.isAddress(parts[0])) {
+    if (!isValidAddress(parts[0])) {
       result.details.push({ line: idx + 1, raw: line, reason: 'invalid-address' })
       return
     }
@@ -158,7 +175,7 @@ const parseRecipientList = (text) => {
       result.details.push({ line: idx + 1, raw: line, reason: 'invalid-amount' })
       return
     }
-    const normalized = parts[0].toLowerCase()
+    const normalized = normalize(parts[0])
     if (seen.has(normalized)) {
       const conflict = seen.get(normalized) !== amount
       result.details.push({ line: idx + 1, raw: line, reason: conflict ? 'duplicate-conflict' : 'duplicate' })
@@ -306,15 +323,19 @@ function App() {
 
   // ── Reown AppKit wallet state (replaces the old WalletConnect provider plumbing) ──
   const { open: openAppKit } = useAppKit()
-  const { address: akAddress, isConnected: akIsConnected } = useAppKitAccount()
-  const { chainId: akChainId } = useAppKitNetwork()
+  const { address: akAddress, isConnected: akIsConnected, caipAddress: akCaipAddress } = useAppKitAccount()
+  const { chainId: akChainId, caipNetworkId: akCaipNetworkId, switchNetwork: akSwitchNetwork } = useAppKitNetwork()
   const { walletProvider } = useAppKitProvider('eip155')
+  const { walletProvider: solanaWalletProvider } = useAppKitProvider('solana')
   const { disconnect: akDisconnect } = useDisconnect()
 
   // Keep the latest EIP-1193 provider in a ref so the imperative helpers (send,
   // approve, balance, network switch) can keep using the same getProvider() pattern.
   const providerRef = useRef(null)
   const getProvider = () => providerRef.current
+  // Same pattern for the Solana wallet provider (undefined on EVM chains)
+  const solProviderRef = useRef(null)
+  const getSolProvider = () => solProviderRef.current
 
   // Synchronous in-flight lock shared by send/approve: a double-click on the
   // autofocused confirm button must never queue a second wallet signature.
@@ -358,7 +379,16 @@ function App() {
 
   const getCurrentNetworkConfig = () => getNetwork(chainId)
   const getCurrentContractAddress = () => getContractAddress(chainId)
-  const isNetworkSupported = () => chainId !== null && SUPPORTED_CHAINS.includes(Number(chainId))
+  const isNetworkSupported = () =>
+    chainId !== null && (isSolanaChain(chainId) || SUPPORTED_CHAINS.includes(Number(chainId)))
+
+  // ── Chain-aware address handling ─────────────────────────────────────────
+  // Solana ids are base58 strings; EVM ids are numbers. Address validation
+  // and dedup-normalization must match the active chain (base58 is
+  // case-sensitive, hex is not).
+  const isSolana = isSolanaChain(chainId)
+  const validateAddress = isSolana ? isValidSolanaAddress : ethers.isAddress
+  const normalizeAddress = isSolana ? (a) => a : (a) => a.toLowerCase()
 
   // Theme toggle function
   const toggleTheme = () => {
@@ -394,11 +424,14 @@ function App() {
     try { appkit?.setThemeMode?.(theme) } catch (e) { /* noop */ }
   }, [theme])
 
-  // Keep the provider ref in sync with AppKit's current wallet provider.
-  // Declared first so providerRef is set before the balance effect runs.
+  // Keep the provider refs in sync with AppKit's current wallet providers.
+  // Declared first so the refs are set before the balance effect runs.
   useEffect(() => {
     providerRef.current = walletProvider || null
   }, [walletProvider])
+  useEffect(() => {
+    solProviderRef.current = solanaWalletProvider || null
+  }, [solanaWalletProvider])
 
   // Sync the connected account from AppKit.
   useEffect(() => {
@@ -410,10 +443,28 @@ function App() {
     }
   }, [akIsConnected, akAddress])
 
-  // Sync the active network from AppKit.
+  // Sync the active network from AppKit. EVM ids are numeric; Solana reports
+  // a base58 string id which must be kept as-is (Number() would give NaN).
+  // AppKit surfaces the chain in several shapes depending on namespace and
+  // connection timing: a bare id (1, '5eykt4…'), a CAIP id ('eip155:1',
+  // 'solana:5eykt4…'), or — for a freshly-restored Solana session — only via
+  // the account's CAIP address ('solana:<chain>:<address>'). Normalize all
+  // of them; otherwise a Solana connection lands as 'Unknown network' with
+  // ETH defaults.
   useEffect(() => {
-    if (akChainId) {
-      const id = Number(akChainId)
+    let raw = akChainId ?? akCaipNetworkId ?? null
+    if (raw == null && akCaipAddress) {
+      const parts = String(akCaipAddress).split(':')
+      if (parts.length >= 3) raw = parts[1] // namespace:chainId:address
+    }
+    if (raw != null && String(raw).includes(':')) {
+      raw = String(raw).split(':')[1] // CAIP 'namespace:chainId' → chainId
+    }
+    if (import.meta.env.DEV) {
+      console.debug('[network-sync]', { akChainId, akCaipNetworkId, akCaipAddress, resolved: raw })
+    }
+    if (raw != null && raw !== '') {
+      const id = /^\d+$/.test(String(raw)) ? Number(raw) : String(raw)
       setChainId(id)
       const config = NETWORKS[id]
       setNetwork(config?.name || `Chain ${id}`)
@@ -421,14 +472,16 @@ function App() {
       setChainId(null)
       setNetwork(null)
     }
-  }, [akChainId])
+  }, [akChainId, akCaipNetworkId, akCaipAddress])
 
   // Refresh balance whenever the account, network, or provider changes.
+  // Keyed on the app-level chainId (not akChainId) so updateBalance's chain
+  // branch never runs against a stale id mid network-switch.
   useEffect(() => {
-    if (akIsConnected && akAddress && walletProvider) {
+    if (akIsConnected && akAddress) {
       updateBalance(akAddress)
     }
-  }, [akIsConnected, akAddress, akChainId, walletProvider])
+  }, [akIsConnected, akAddress, chainId, walletProvider, solanaWalletProvider])
 
   // Fetch native token price when chainId changes
   useEffect(() => {
@@ -500,7 +553,7 @@ function App() {
     if (showNetworkSwitcher) {
       netWasOpenRef.current = true
       const ids = Object.keys(NETWORKS)
-      const activeIdx = Math.max(0, ids.findIndex((id) => Number(id) === Number(chainId)))
+      const activeIdx = Math.max(0, ids.findIndex((id) => String(id) === String(chainId)))
       setNetFocusIndex(activeIdx)
       netDropdownRef.current?.querySelectorAll('.network-option')?.[activeIdx]?.focus()
     } else if (netWasOpenRef.current) {
@@ -606,27 +659,20 @@ function App() {
   }
 
   const updateBalance = async (address) => {
-    const wcProvider = getProvider()
-    if (!wcProvider) return
-    const provider = new ethers.BrowserProvider(wcProvider)
-    const bal = await provider.getBalance(address)
-    setBalance(ethers.formatEther(bal))
-  }
-
-  const updateNetwork = async () => {
+    const config = getNetwork(chainId)
     try {
-      const wcProvider = getProvider()
-      if (!wcProvider) {
-        console.warn('No provider available')
+      if (config.type === 'solana') {
+        // Direct RPC read — no wallet provider needed for Solana balances
+        setBalance(await getSolBalance(config.rpcUrl, address))
         return
       }
+      const wcProvider = getProvider()
+      if (!wcProvider) return
       const provider = new ethers.BrowserProvider(wcProvider)
-      const net = await provider.getNetwork()
-      setChainId(net.chainId)
-      const config = getNetwork(net.chainId)
-      setNetwork(config.name || `Chain ${net.chainId}`)
+      const bal = await provider.getBalance(address)
+      setBalance(ethers.formatEther(bal))
     } catch (err) {
-      console.error('Failed to update network:', err)
+      console.error('Failed to update balance:', err)
     }
   }
 
@@ -703,59 +749,24 @@ function App() {
     clearTimeout(confirmClearTimerRef.current)
   }, [])
 
+  // Network switching goes through AppKit, which handles both namespaces
+  // (EVM wallet_switchEthereumChain/addEthereumChain and Solana) plus any
+  // cross-namespace reconnect. State then flows back via the sync effects.
   const switchNetwork = async (targetChainId) => {
-    const chainHex = '0x' + targetChainId.toString(16)
     try {
-      const wcProvider = getProvider()
-      if (!wcProvider) {
-        setError('Wallet not connected')
+      const target = appkitNetworks.find((n) => String(n.id) === String(targetChainId))
+      if (!target) {
+        setError('Unsupported network')
         return
       }
-
-      await wcProvider.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: chainHex }],
-      })
-
-      // Update state after successful switch
-      await updateNetwork()
-      // Update balance for the new network
-      if (account) {
-        await updateBalance(account)
-      }
+      await akSwitchNetwork(target)
       setShowNetworkSwitcher(false)
       setError(null)
     } catch (err) {
-      // Network not added - try to add it
-      if (err.code === 4902) {
-        try {
-          const wcProvider = getProvider()
-          // chainParams come from the single source of truth in ./networks.js
-          const params = NETWORKS[targetChainId]?.chainParams
-          if (params) {
-            await wcProvider.request({
-              method: 'wallet_addEthereumChain',
-              params: [{ chainId: chainHex, ...params }],
-            })
-            // Update state after adding network
-            await updateNetwork()
-            // Update balance for the new network
-            if (account) {
-              await updateBalance(account)
-            }
-            setShowNetworkSwitcher(false)
-            setError(null)
-          }
-        } catch (addErr) {
-          setError(isUserRejection(addErr) ? 'Network switch cancelled' : 'Failed to add network')
-          console.error(addErr)
-        }
-      } else {
-        // Calm copy for a dismissed wallet prompt; parseError for real failures
-        // (never surface raw MetaMask/WalletConnect text verbatim)
-        setError(isUserRejection(err) ? 'Network switch cancelled' : parseError(err))
-        console.error(err)
-      }
+      // Calm copy for a dismissed wallet prompt; parseError for real failures
+      // (never surface raw MetaMask/WalletConnect text verbatim)
+      setError(isUserRejection(err) ? 'Network switch cancelled' : parseError(err))
+      console.error(err)
     }
   }
 
@@ -763,11 +774,11 @@ function App() {
   // every skipped row ({ line, raw, reason }) for the per-line warning list.
   const parsedList = useMemo(() => {
     if (sendMode === 'same') {
-      const { addresses, details } = parseAddressList(recipients)
+      const { addresses, details } = parseAddressList(recipients, validateAddress, normalizeAddress)
       return { recipients: addresses, amounts: null, details }
     }
-    return parseRecipientList(recipients)
-  }, [recipients, sendMode])
+    return parseRecipientList(recipients, validateAddress, normalizeAddress)
+  }, [recipients, sendMode, isSolana])
   const parseDetails = parsedList.details
 
   const getRecipientsAndAmounts = () => {
@@ -843,7 +854,7 @@ function App() {
   const getRecipientCount = () => parsedList.recipients.length
 
   const addQuickRecipient = () => {
-    if (!quickAddAddress || !ethers.isAddress(quickAddAddress)) return
+    if (!quickAddAddress || !validateAddress(quickAddAddress)) return
     if (sendMode === 'custom') {
       const amount = parseFloat(quickAddAmount)
       if (!quickAddAmount || Number.isNaN(amount) || amount <= 0) return
@@ -939,7 +950,116 @@ function App() {
     setShowConfirmation(true)
   }
 
+  // Solana batch lifecycle shared by SOL and SPL sends: build chunked txs,
+  // sign (one prompt via signAllTransactions when supported), submit, confirm.
+  // Mirrors the EVM txStatus stages so the existing UI just works.
+  const runSolanaBatch = async ({ buildTxs, symbol, priceUsd }) => {
+    if (txLockRef.current) return
+    txLockRef.current = true
+
+    const netConfig = getCurrentNetworkConfig()
+    const explorerBase = netConfig.explorer
+
+    try {
+      setSubmitting(true)
+      setLoading(true)
+      setError(null)
+      setTxStatus({ stage: 'signing', hash: null, explorerBase, message: null })
+
+      const { recipients: addrs, amounts } = getRecipientsAndAmounts()
+      if (addrs.length === 0) {
+        throw new Error('No valid recipients')
+      }
+
+      const provider = getSolProvider()
+      if (!provider) {
+        throw new Error('Solana wallet not connected')
+      }
+
+      const txs = await buildTxs(addrs, amounts)
+      const total = amounts.reduce((sum, a) => sum + parseFloat(a || 0), 0)
+
+      const signatures = await sendSolanaBatch({
+        provider,
+        rpcUrl: netConfig.rpcUrl,
+        txs,
+        onProgress: ({ index, count, signature }) => {
+          // First signature resolved — the wallet prompt is done
+          setShowConfirmation(false)
+          setSubmitting(false)
+          setTxStatus({
+            stage: 'pending',
+            hash: signature,
+            explorerBase,
+            message: count > 1 ? `Submitting transaction ${index + 1} of ${count}…` : null,
+          })
+        },
+      })
+
+      setTxStatus({
+        stage: 'confirmed',
+        hash: signatures[signatures.length - 1],
+        signatures,
+        explorerBase,
+        message: null,
+        total,
+        symbol,
+        count: addrs.length,
+        usdTotal: priceUsd ? total * priceUsd : null,
+        network: netConfig.name,
+        contractAddress: null, // direct transfers — no contract on Solana
+        recipients: addrs,
+        amounts,
+      })
+      // Refresh failures must not flip a confirmed tx into a 'failed' status
+      try { await updateBalance(account) } catch (e) { console.error('Balance refresh failed:', e) }
+    } catch (err) {
+      console.error(err)
+      setShowConfirmation(false)
+      setTxStatus({ stage: 'failed', hash: null, explorerBase, message: parseError(err) })
+    } finally {
+      setLoading(false)
+      setSubmitting(false)
+      setPendingTx(null)
+      txLockRef.current = false
+    }
+  }
+
+  const sendSolanaNative = () =>
+    runSolanaBatch({
+      symbol: 'SOL',
+      priceUsd: ethPrice,
+      buildTxs: (addrs, amounts) => {
+        // SOL has 9 decimals; parseUnits keeps lamports exact (bigint)
+        const lamports = amounts.map((a) => ethers.parseUnits(parseFloat(a).toFixed(9), 9))
+        return buildSolBatchTxs({ from: account, recipients: addrs, lamports })
+      },
+    })
+
+  const sendSolanaSpl = () =>
+    runSolanaBatch({
+      symbol: tokenInfo?.symbol || 'tokens',
+      priceUsd: tokenPrice,
+      buildTxs: async (addrs, amounts) => {
+        const decimals = tokenInfo.decimals
+        const amountsInUnits = amounts.map((a) =>
+          ethers.parseUnits(parseFloat(a).toFixed(decimals), decimals)
+        )
+        const { txs } = await buildSplBatchTxs({
+          rpcUrl: getCurrentNetworkConfig().rpcUrl,
+          from: account,
+          mint: tokenAddress,
+          programId: tokenInfo.programId,
+          decimals,
+          recipients: addrs,
+          amountsInUnits,
+        })
+        return txs
+      },
+    })
+
   const sendNative = async () => {
+    if (isSolana) return sendSolanaNative()
     // Synchronous double-submit guard: one wallet signature per click-through
     if (txLockRef.current) return
     txLockRef.current = true
@@ -1011,7 +1131,7 @@ function App() {
     // again must never overwrite the newer lookup's state
     const reqId = ++tokenLookupIdRef.current
 
-    if (!tokenAddress || !ethers.isAddress(tokenAddress)) {
+    if (!tokenAddress || !validateAddress(tokenAddress)) {
       setTokenInfo(null)
       setTokenPrice(null)
       setTokenError(null)
@@ -1026,7 +1146,29 @@ function App() {
     // Connected: read through the wallet provider (includes the user's
     // balance). Preview mode: read-only lookup via the selected network's
     // public RPC so the demo works before a wallet is connected.
-    const netConfig = NETWORKS[Number(chainId)] || NETWORKS[1]
+    const netConfig = NETWORKS[chainId] || NETWORKS[Number(chainId)] || NETWORKS[1]
+
+    // Solana: SPL mint lookup over RPC (no wallet provider needed; balance
+    // included only when connected). No approval concept on Solana.
+    if (netConfig.type === 'solana') {
+      try {
+        const info = await getSplTokenInfo(netConfig.rpcUrl, tokenAddress, account || null)
+        if (reqId !== tokenLookupIdRef.current) return
+        setTokenInfo(info)
+        setNeedsApproval(false)
+        fetchTokenPrice(tokenAddress)
+      } catch (err) {
+        console.error('Failed to load SPL token info:', err)
+        if (reqId !== tokenLookupIdRef.current) return
+        setTokenInfo(null)
+        setTokenPrice(null)
+        setTokenError('No SPL token found at this address on Solana — check the mint address')
+      } finally {
+        if (reqId === tokenLookupIdRef.current) setTokenLoading(false)
+      }
+      return
+    }
+
     const wcProvider = getProvider()
     const hasWallet = Boolean(account && wcProvider)
 
@@ -1095,6 +1237,9 @@ function App() {
   }
 
   const checkAllowance = async () => {
+    // Solana SPL transfers move straight from the owner's token account —
+    // there is no allowance/approval step.
+    if (isSolana) return
     if (!account || !tokenAddress || !tokenInfo) return
 
     const contractAddress = getCurrentContractAddress()
@@ -1214,6 +1359,7 @@ function App() {
   }
 
   const sendERC20 = async () => {
+    if (isSolana) return sendSolanaSpl()
     // Synchronous double-submit guard: one wallet signature per click-through
     if (txLockRef.current) return
     txLockRef.current = true
@@ -1290,6 +1436,28 @@ function App() {
     let cancelled = false
     const estimateFee = async () => {
       try {
+        // Solana: base fee per chunk, plus rent for any recipient token
+        // accounts that must be created (SPL only)
+        if (isSolana) {
+          const cfg = getCurrentNetworkConfig()
+          const { feeSol, txCount, missingAtas } = await estimateSolanaFees({
+            rpcUrl: cfg.rpcUrl,
+            type: pendingTx.type === 'native' ? 'native' : 'spl',
+            recipients: pendingTx.recipients,
+            mint: tokenAddress || undefined,
+            programId: tokenInfo?.programId,
+          })
+          if (!cancelled) {
+            setGasEstimate({
+              native: feeSol,
+              usd: ethPrice ? feeSol * ethPrice : null,
+              txCount,
+              missingAtas,
+            })
+          }
+          return
+        }
+
         const wcProvider = getProvider()
         const contractAddr = getCurrentContractAddress()
         if (!wcProvider || !contractAddr) throw new Error('No provider')
@@ -1361,12 +1529,14 @@ function App() {
   const symbol = activeTab === 'native' ? nativeSymbol : (tokenInfo?.symbol || 'tokens')
   const price = activeTab === 'native' ? ethPrice : tokenPrice
   const explorerUrl = networkConfig.explorer
-  const isQuickAddDisabled = !quickAddAddress || !ethers.isAddress(quickAddAddress) || (sendMode === 'custom' && (!quickAddAmount || Number(quickAddAmount) <= 0))
+  const isQuickAddDisabled = !quickAddAddress || !validateAddress(quickAddAddress) || (sendMode === 'custom' && (!quickAddAmount || Number(quickAddAmount) <= 0))
 
   // Live token-address field validation (as the user types) + lookup error
-  const tokenAddressFormatInvalid = tokenAddress !== '' && !ethers.isAddress(tokenAddress)
+  const tokenAddressFormatInvalid = tokenAddress !== '' && !validateAddress(tokenAddress)
   const tokenFieldError = tokenAddressFormatInvalid
-    ? 'Invalid address format — expected 0x followed by 40 hex characters'
+    ? (isSolana
+        ? 'Invalid address format — expected a base58 Solana mint address'
+        : 'Invalid address format — expected 0x followed by 40 hex characters')
     : (!tokenLoading && tokenAddress && !tokenInfo && tokenError) ? tokenError : null
 
   // Human-readable exact allowance for the ApprovalCard ("120.5 USDC")
@@ -1431,7 +1601,7 @@ function App() {
   })()
   // Honest, verifiable facts only — no invented usage numbers
   const heroStats = [
-    { value: `${SUPPORTED_CHAINS.length}`, label: 'Networks supported' },
+    { value: `${Object.keys(NETWORKS).length}`, label: 'Networks supported' },
     { value: '0%', label: 'Platform fee' },
     { value: `Up to ${APP_CONFIG.MAX_RECIPIENTS}`, label: 'Recipients per batch' },
   ]
@@ -1439,7 +1609,7 @@ function App() {
     {
       step: '01',
       title: 'Connect and pick an asset',
-      description: 'Bring in your wallet, choose the active network, and decide between native token or ERC20 payouts.',
+      description: 'Bring in your wallet, choose the active network, and decide between native token or token payouts (ERC20 on EVM chains, SPL on Solana).',
     },
     {
       step: '02',
@@ -1463,7 +1633,7 @@ function App() {
       ),
     },
     {
-      title: 'Native and ERC20 support',
+      title: 'Native, ERC20 and SPL support',
       description: 'Switch between network currency payouts and token distributions without losing your current recipient list.',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -1494,10 +1664,10 @@ function App() {
     },
   ]
   const faqItems = [
-    { q: 'What is MultiSend?', a: 'MultiSend is a smart contract tool that lets you send a native token or ERC20 asset to many wallet addresses in a single blockchain transaction.' },
+    { q: 'What is MultiSend?', a: 'MultiSend is a batching tool that lets you send a native token, ERC20, or SPL asset to many wallet addresses at once — one contract call on EVM chains, batched transfer instructions on Solana.' },
     { q: 'How much gas can it save?', a: 'Batching transfers usually costs much less than sending each transfer manually. Savings grow as the recipient list gets larger.' },
-    { q: 'Is it custodial?', a: 'No. You sign from your own wallet and funds move directly to recipients through the deployed contract.' },
-    { q: 'Which networks are supported?', a: 'The app supports Ethereum, Base, Polygon, Arbitrum, Optimism, BNB Chain, and Sepolia.' },
+    { q: 'Is it custodial?', a: 'No. You sign from your own wallet and funds move directly to recipients — through the deployed contract on EVM chains, or as direct transfers on Solana.' },
+    { q: 'Which networks are supported?', a: 'The app supports Ethereum, Base, Polygon, Arbitrum, Optimism, BNB Chain, opBNB, Solana, and Sepolia.' },
   ]
   const checklistItems = [
     'Double-check the recipient list after pasting.',
@@ -1575,19 +1745,19 @@ function App() {
                       {Object.entries(NETWORKS).map(([id, config], idx) => (
                         <button
                            key={id}
-                           className={`network-option ${Number(chainId) === Number(id) ? 'active' : ''}`}
+                           className={`network-option ${String(chainId) === String(id) ? 'active' : ''}`}
                            role="option"
-                           aria-selected={Number(chainId) === Number(id)}
+                           aria-selected={String(chainId) === String(id)}
                            tabIndex={idx === netFocusIndex ? 0 : -1}
                            onClick={async () => {
-                             await switchNetwork(Number(id))
+                             await switchNetwork(id)
                            }}
                          >
                           <span className="network-option-icon">
                             {NETWORK_LOGOS[config.logo]}
                           </span>
                           <span className="network-option-name">{config.name}</span>
-                          {Number(chainId) === Number(id) && <span className="network-check">✓</span>}
+                          {String(chainId) === String(id) && <span className="network-check">✓</span>}
                         </button>
                       ))}
                     </div>
@@ -1653,7 +1823,7 @@ function App() {
                   Send to many wallets in <span className="hero-highlight">one transaction</span>.
                 </h1>
                 <p className="hero-subtitle">
-                  Batch native and ERC20 payouts across eight networks. Connect, paste, send.
+                  Batch native, ERC20, and SPL payouts across nine networks — EVM and Solana. Connect, paste, send.
                 </p>
                 <div className="hero-actions">
                   <button className="btn-hero" onClick={() => setEntered(true)}>
@@ -1723,6 +1893,7 @@ function App() {
                       <div className="chain-item">{NETWORK_LOGOS.optimism}<span>Optimism</span></div>
                       <div className="chain-item">{NETWORK_LOGOS.bnb}<span>BNB</span></div>
                       <div className="chain-item">{NETWORK_LOGOS.opbnb}<span>opBNB</span></div>
+                      <div className="chain-item">{NETWORK_LOGOS.solana}<span>Solana</span></div>
                       <div className="chain-item">{NETWORK_LOGOS.sepolia}<span>Sepolia <span className="chain-tag-testnet">Testnet</span></span></div>
                     </div>
                   ))}
@@ -1878,6 +2049,8 @@ function App() {
                   <a href={`${explorerUrl}/address/${contractAddress}`} target="_blank" rel="noopener noreferrer" className="dashboard-chip link">
                     Contract {contractAddress.slice(0, 6)}...{contractAddress.slice(-4)}
                   </a>
+                ) : isSolana ? (
+                  <span className="dashboard-chip muted">Direct transfers — no contract on Solana</span>
                 ) : account ? (
                   <span className="dashboard-chip muted">Contract unavailable on this network</span>
                 ) : (
@@ -1892,9 +2065,9 @@ function App() {
               <div className="alert alert-warning">
                 <span>Network not supported! Switch to a supported network:</span>
                 <div className="network-buttons">
-                  {SUPPORTED_CHAINS.map((id) => (
+                  {Object.entries(NETWORKS).map(([id, config]) => (
                     <button key={id} onClick={() => switchNetwork(id)}>
-                      {NETWORKS[id]?.name || `Chain ${id}`}
+                      {config.name}
                     </button>
                   ))}
                 </div>
@@ -1926,7 +2099,7 @@ function App() {
                       <div>
                         <h2 className="tx-result-title">Batch sent</h2>
                         <p className="tx-result-summary">
-                          Delivered to {txStatus.count} {txStatus.count === 1 ? 'address' : 'addresses'} in a single transaction.
+                          Delivered to {txStatus.count} {txStatus.count === 1 ? 'address' : 'addresses'} {Array.isArray(txStatus.signatures) && txStatus.signatures.length > 1 ? `across ${txStatus.signatures.length} transactions.` : 'in a single transaction.'}
                         </p>
                       </div>
                     </div>
@@ -1967,7 +2140,27 @@ function App() {
                           </span>
                         </div>
                       )}
-                      {txStatus.hash && (
+                      {Array.isArray(txStatus.signatures) && txStatus.signatures.length > 1 ? (
+                        /* Solana batches larger than one chunk land as several transactions */
+                        txStatus.signatures.map((sig, i) => (
+                          <div className="tx-receipt-row" key={sig}>
+                            <span className="tx-receipt-label">Transaction {i + 1}/{txStatus.signatures.length}</span>
+                            <span className="tx-receipt-value mono">
+                              {txStatus.explorerBase ? (
+                                <a
+                                  href={`${txStatus.explorerBase}/tx/${sig}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {sig.slice(0, 10)}…{sig.slice(-8)} ↗
+                                </a>
+                              ) : (
+                                <>{sig.slice(0, 10)}…{sig.slice(-8)}</>
+                              )}
+                            </span>
+                          </div>
+                        ))
+                      ) : txStatus.hash && (
                         <div className="tx-receipt-row">
                           <span className="tx-receipt-label">Transaction</span>
                           <span className="tx-receipt-value mono">
@@ -2059,20 +2252,22 @@ function App() {
                     <div className="send-card-note">
                       {activeTab === 'native'
                         ? `Using ${nativeSymbol} on ${networkConfig.name}.`
-                        : 'ERC20 mode requires a token address and approval when needed.'}
+                        : isSolana
+                          ? 'SPL mode needs the token mint address — no approval step on Solana.'
+                          : 'ERC20 mode requires a token address and approval when needed.'}
                     </div>
                   </div>
 
                   {activeTab === 'erc20' && (
                     <div className="token-input-section">
-                      <label htmlFor="token-address-input">Token Contract Address</label>
+                      <label htmlFor="token-address-input">{isSolana ? 'Token Mint Address' : 'Token Contract Address'}</label>
                       <div className={`token-input-wrap ${tokenLoading ? 'loading' : ''}`}>
                         <input
                           id="token-address-input"
                           type="text"
                           value={tokenAddress}
                           onChange={(e) => setTokenAddress(e.target.value.trim())}
-                          placeholder="0x..."
+                          placeholder={isSolana ? 'Mint address (base58)' : '0x...'}
                           className={`input-token ${tokenFieldError ? 'input-token-error' : ''}`}
                           aria-invalid={Boolean(tokenFieldError)}
                           aria-describedby={tokenFieldError ? 'token-address-error' : undefined}
@@ -2248,7 +2443,7 @@ function App() {
                     />
                   </div>
 
-                  {activeTab === 'erc20' && tokenInfo && !isUnsupportedNetwork && (needsApproval || approvalStatus.stage !== 'idle') && (
+                  {activeTab === 'erc20' && !isSolana && tokenInfo && !isUnsupportedNetwork && (needsApproval || approvalStatus.stage !== 'idle') && (
                     <ApprovalCard
                       tokenSymbol={tokenInfo.symbol}
                       isApproving={approving}
@@ -2287,7 +2482,7 @@ function App() {
                     <div className="alert alert-info" role="status" aria-live="polite">
                       <div className="tx-pending-message">
                         <span className="tx-inline-spinner" aria-hidden="true"></span>
-                        <span>Transaction submitted — waiting for network confirmation.</span>
+                        <span>{txStatus.message || 'Transaction submitted — waiting for network confirmation.'}</span>
                       </div>
                       {txStatus.hash && txStatus.explorerBase && (
                         <a href={`${txStatus.explorerBase}/tx/${txStatus.hash}`} target="_blank" rel="noopener noreferrer">
@@ -2483,10 +2678,21 @@ function App() {
                           {gasEstimate.usd !== null && (
                             <span className="gas-usd"> ({gasEstimate.usd < 0.01 ? '< $0.01' : `$${gasEstimate.usd.toFixed(2)}`})</span>
                           )}
+                          {gasEstimate.missingAtas > 0 && (
+                            <span className="gas-usd"> — includes account rent for {gasEstimate.missingAtas} new {gasEstimate.missingAtas === 1 ? 'recipient' : 'recipients'}</span>
+                          )}
                         </>
                       )}
                     </span>
                   </div>
+                  {gasEstimate?.txCount > 1 && (
+                    <div className="confirmation-row">
+                      <span className="confirmation-label">Transactions</span>
+                      <span className="confirmation-value">
+                        {gasEstimate.txCount} (batch exceeds Solana's single-transaction size — sign once, sent in chunks)
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {pendingTx.skippedRows > 0 && (

@@ -8,6 +8,7 @@
 // Do NOT duplicate this map elsewhere — import from here.
 
 import React from 'react'
+import { SOLANA_MAINNET_CHAIN_ID } from './solana'
 
 // ── Network metadata ────────────────────────────────────────────────────────
 // `symbol` is the display symbol for the native currency. Polygon's native
@@ -120,6 +121,23 @@ export const NETWORKS = {
       blockExplorerUrls: ['https://opbnb.bscscan.com'],
     },
   },
+  // Solana mainnet — non-EVM. Keyed by the id AppKit reports as chainId
+  // (a base58 string, not a number). No chainParams: network switching for
+  // Solana goes through AppKit's switchNetwork, not wallet_addEthereumChain.
+  // type: 'solana' marks the entry for chain-aware branching in App.jsx.
+  [SOLANA_MAINNET_CHAIN_ID]: {
+    name: 'Solana',
+    symbol: 'SOL',
+    type: 'solana',
+    explorer: 'https://explorer.solana.com',
+    coingeckoId: 'solana',
+    logo: 'solana',
+    // NOT api.mainnet-beta.solana.com — that endpoint 403s browser-originated
+    // requests. PublicNode is free + CORS-open; swap for Helius/QuickNode if
+    // rate limits bite.
+    rpcUrl: 'https://solana-rpc.publicnode.com',
+    nativeCurrency: { name: 'SOL', symbol: 'SOL', decimals: 9 },
+  },
   11155111: {
     name: 'Sepolia',
     symbol: 'ETH',
@@ -146,7 +164,10 @@ export const UNKNOWN_NETWORK = {
   logo: null,
 }
 
-export const getNetwork = (chainId) => NETWORKS[Number(chainId)] || UNKNOWN_NETWORK
+// chainId may be a number/bigint (EVM) or a base58 string (Solana) — try the
+// raw key first, then the numeric coercion for bigint/string EVM ids.
+export const getNetwork = (chainId) =>
+  NETWORKS[chainId] || NETWORKS[Number(chainId)] || UNKNOWN_NETWORK
 
 // ── Network logos (inline SVG) ───────────────────────────────────────────────
 // Hoisted out of the App component body so the JSX elements are not rebuilt
@@ -223,7 +244,23 @@ const SepoliaLogo = (
   </svg>
 )
 
+const SolanaLogo = (
+  <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="16" r="16" fill="#000"/>
+    <defs>
+      <linearGradient id="solGrad" x1="7" y1="25" x2="25" y2="7" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#9945FF"/>
+        <stop offset="1" stopColor="#14F195"/>
+      </linearGradient>
+    </defs>
+    <path d="M10.4 20.7a.72.72 0 01.51-.21h13.73c.32 0 .48.39.25.62l-2.79 2.71a.72.72 0 01-.5.21H7.86a.36.36 0 01-.25-.62l2.79-2.71z" fill="url(#solGrad)"/>
+    <path d="M10.4 8.17a.72.72 0 01.51-.21h13.73c.32 0 .48.39.25.61l-2.79 2.72a.72.72 0 01-.5.2H7.86a.36.36 0 01-.25-.61l2.79-2.71z" fill="url(#solGrad)"/>
+    <path d="M21.6 14.4a.72.72 0 00-.5-.21H7.36a.36.36 0 00-.25.62l2.79 2.71c.13.13.31.21.5.21h13.74c.32 0 .48-.39.25-.62l-2.79-2.71z" fill="url(#solGrad)"/>
+  </svg>
+)
+
 export const NETWORK_LOGOS = {
+  solana: SolanaLogo,
   ethereum: EthereumLogo,
   bnb: BnbLogo,
   polygon: PolygonLogo,
