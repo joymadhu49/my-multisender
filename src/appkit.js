@@ -3,7 +3,7 @@
 import { createAppKit } from '@reown/appkit/react'
 import { EthersAdapter } from '@reown/appkit-adapter-ethers'
 import { SolanaAdapter } from '@reown/appkit-adapter-solana'
-import { mainnet, bsc, base, polygon, arbitrum, optimism, opBNB, sepolia, solana } from '@reown/appkit/networks'
+import { mainnet, bsc, base, polygon, arbitrum, optimism, opBNB, sepolia, solana, defineChain } from '@reown/appkit/networks'
 
 // Reown / WalletConnect Cloud project id — sourced from the environment.
 // Vite only exposes vars prefixed with VITE_ to the browser bundle.
@@ -17,9 +17,41 @@ if (!projectId) {
   )
 }
 
+// Robinhood Chain (Arbitrum Nitro L2 on Ethereum, native ETH).
+//
+// Defined locally rather than imported from '@reown/appkit/networks': AppKit
+// re-exports viem/chains, and `robinhood` only landed in viem 2.56 — the
+// version this project's lockfile resolves is older, so the import would be
+// undefined at runtime and break AppKit init. Keep this local definition even
+// after a viem bump unless you verify the export exists.
+//
+// Explorer is robinscan.io, not robinhoodchain.blockscout.com: Blockscout is
+// TLS-blocked on some networks, robinscan resolves reliably (EIP-3091 paths).
+export const robinhood = defineChain({
+  id: 4663,
+  caipNetworkId: 'eip155:4663',
+  chainNamespace: 'eip155',
+  name: 'Robinhood Chain',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: {
+    default: {
+      http: [
+        'https://rpc.mainnet.chain.robinhood.com',
+        'https://robinhood-rpc.publicnode.com',
+      ],
+    },
+  },
+  blockExplorers: {
+    default: { name: 'Robinscan', url: 'https://robinscan.io' },
+  },
+  contracts: {
+    multicall3: { address: '0xcA11bde05977b3631167028862bE2a173976CA11' },
+  },
+})
+
 // Order mirrors the app's NETWORKS / supported chains:
-// Ethereum, BNB Chain, Base, Polygon, Arbitrum, Optimism, opBNB, Sepolia, Solana.
-export const networks = [mainnet, bsc, base, polygon, arbitrum, optimism, opBNB, sepolia, solana]
+// Ethereum, BNB Chain, Base, Polygon, Arbitrum, Optimism, opBNB, Robinhood, Sepolia, Solana.
+export const networks = [mainnet, bsc, base, polygon, arbitrum, optimism, opBNB, robinhood, sepolia, solana]
 
 const metadata = {
   name: 'MultiSend',

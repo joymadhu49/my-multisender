@@ -46,6 +46,7 @@ const COINGECKO_PLATFORMS = {
   10: 'optimistic-ethereum', // Optimism
   8453: 'base',            // Base
   204: 'opbnb',            // opBNB
+  4663: 'robinhood',      // Robinhood Chain
   11155111: 'ethereum',    // Sepolia (uses Ethereum platform)
   // Solana mainnet — keyed by the AppKit chain id string (see src/solana.js)
   '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp': 'solana',

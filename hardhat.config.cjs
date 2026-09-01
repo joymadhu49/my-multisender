@@ -67,6 +67,18 @@ module.exports = {
       url: process.env.OPBNB_TESTNET_RPC || "https://opbnb-testnet-rpc.bnbchain.org",
       accounts: [PRIVATE_KEY],
       chainId: 5611
+    },
+    // Robinhood Chain (Arbitrum Nitro L2 on Ethereum, native ETH)
+    robinhood: {
+      url: process.env.ROBINHOOD_RPC || "https://rpc.mainnet.chain.robinhood.com",
+      accounts: [PRIVATE_KEY],
+      chainId: 4663
+    },
+    // Robinhood Chain Testnet (settles to Sepolia)
+    robinhoodTestnet: {
+      url: process.env.ROBINHOOD_TESTNET_RPC || "https://rpc.testnet.chain.robinhood.com/rpc",
+      accounts: [PRIVATE_KEY],
+      chainId: 46630
     }
   },
   etherscan: {
@@ -86,6 +98,40 @@ module.exports = {
         urls: {
           apiURL: "https://api.etherscan.io/v2/api?chainid=5611",
           browserURL: "https://opbnb-testnet.bscscan.com"
+        }
+      }
+    ]
+  },
+  // Robinhood Chain has no Etherscan V2 coverage. Its explorers are Blockscout
+  // instances, so they belong here rather than in etherscan.customChains.
+  //
+  // Caveat: robinhoodchain.blockscout.com is TLS-blocked on some networks
+  // (including the one this repo was developed on), so `hardhat verify
+  // --network robinhood` can fail before it reaches the explorer. The working
+  // path from here is Sourcify, which supports chain 4663 and produced an
+  // exact match for the deployed contract:
+  //
+  //   node scripts/verify-sourcify.cjs <address> [creationTxHash]
+  //
+  // (The plugin's own `sourcify: { enabled: true }` does not work with this
+  // version — it still calls Sourcify's retired v1 API and gets back HTML.)
+  blockscout: {
+    enabled: true,
+    customChains: [
+      {
+        network: "robinhood",
+        chainId: 4663,
+        urls: {
+          apiURL: "https://robinhoodchain.blockscout.com/api",
+          browserURL: "https://robinhoodchain.blockscout.com"
+        }
+      },
+      {
+        network: "robinhoodTestnet",
+        chainId: 46630,
+        urls: {
+          apiURL: "https://explorer.testnet.chain.robinhood.com/api",
+          browserURL: "https://explorer.testnet.chain.robinhood.com"
         }
       }
     ]

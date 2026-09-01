@@ -1893,6 +1893,7 @@ function App() {
                       <div className="chain-item">{NETWORK_LOGOS.optimism}<span>Optimism</span></div>
                       <div className="chain-item">{NETWORK_LOGOS.bnb}<span>BNB</span></div>
                       <div className="chain-item">{NETWORK_LOGOS.opbnb}<span>opBNB</span></div>
+                      <div className="chain-item">{NETWORK_LOGOS.robinhood}<span>Robinhood</span></div>
                       <div className="chain-item">{NETWORK_LOGOS.solana}<span>Solana</span></div>
                       <div className="chain-item">{NETWORK_LOGOS.sepolia}<span>Sepolia <span className="chain-tag-testnet">Testnet</span></span></div>
                     </div>

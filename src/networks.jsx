@@ -121,6 +121,28 @@ export const NETWORKS = {
       blockExplorerUrls: ['https://opbnb.bscscan.com'],
     },
   },
+  4663: {
+    name: 'Robinhood Chain',
+    symbol: 'ETH',
+    explorer: 'https://robinscan.io',
+    coingeckoId: 'ethereum',
+    logo: 'robinhood',
+    rpcUrl: 'https://rpc.mainnet.chain.robinhood.com',
+    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+    chainParams: {
+      chainName: 'Robinhood Chain',
+      // Official RPC first, PublicNode as the fallback the wallet can fail
+      // over to. NOT the Blockscout explorer for links — robinhoodchain.
+      // blockscout.com is unreachable from some networks; robinscan.io is
+      // the EIP-3091 explorer that resolves reliably.
+      rpcUrls: [
+        'https://rpc.mainnet.chain.robinhood.com',
+        'https://robinhood-rpc.publicnode.com',
+      ],
+      nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+      blockExplorerUrls: ['https://robinscan.io'],
+    },
+  },
   // Solana mainnet — non-EVM. Keyed by the id AppKit reports as chainId
   // (a base58 string, not a number). No chainParams: network switching for
   // Solana goes through AppKit's switchNetwork, not wallet_addEthereumChain.
@@ -259,6 +281,17 @@ const SolanaLogo = (
   </svg>
 )
 
+const RobinhoodLogo = (
+  <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="16" cy="16" r="16" fill="#CCFF00"/>
+    <g transform="translate(-0.1172,32.0851) scale(0.012876,-0.012876)" fill="#000">
+      <path d="M1506 1999c-32-5-77-18-100-29-51-24-251-214-242-229 5-7 70-11 191-11 136 0 186-3 192-12 4-7 10-107 13-222l5-209 111 144c61 79 118 156 128 171 41 64 40 259-2 333-34 58-159 85-296 64z"/>
+      <path d="M1077 1648c-40-37-238-289-248-315-5-13-9-97-9-185v-160l-74-222c-86-257-89-270-60-274 28-4 33 4 94 148 147 348 336 659 555 914 47 54 82 102 79 107-3 5-74 9-159 9-146 0-155-1-178-22z"/>
+      <path d="M1422 1533c-91-107-223-287-301-413-93-149-183-315-176-322 6-6 328 92 362 110 12 7 58 72 102 146l81 134v201c0 113-4 201-9 201-5 0-31-26-59-57z"/>
+    </g>
+  </svg>
+)
+
 export const NETWORK_LOGOS = {
   solana: SolanaLogo,
   ethereum: EthereumLogo,
@@ -268,5 +301,6 @@ export const NETWORK_LOGOS = {
   optimism: OptimismLogo,
   base: BaseLogo,
   opbnb: OpbnbLogo,
+  robinhood: RobinhoodLogo,
   sepolia: SepoliaLogo,
 }
