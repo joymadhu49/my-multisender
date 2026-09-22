@@ -225,7 +225,16 @@ function App() {
   const netDropdownRef = useRef(null)
   const [netFocusIndex, setNetFocusIndex] = useState(0)
   const netWasOpenRef = useRef(false)
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
+  // First visit follows the OS theme; an explicit toggle is remembered
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem('theme')
+      if (saved === 'light' || saved === 'dark') return saved
+      return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    } catch {
+      return 'light'
+    }
+  })
 
   // Whether the visitor has entered the app (send console) without yet connecting a wallet.
   // Lets users explore and build a batch in a preview state; connecting is required only at send time.
@@ -1601,7 +1610,7 @@ function App() {
   })()
   // Honest, verifiable facts only — no invented usage numbers
   const heroStats = [
-    { value: `${Object.keys(NETWORKS).length}`, label: 'Networks supported' },
+    { value: `${Object.values(NETWORKS).filter((n) => !/sepolia|testnet/i.test(n.name)).length}`, label: 'Mainnets supported' },
     { value: '0%', label: 'Platform fee' },
     { value: `Up to ${APP_CONFIG.MAX_RECIPIENTS}`, label: 'Recipients per batch' },
   ]
@@ -1846,7 +1855,14 @@ function App() {
               </div>
 
               <div className="hero-preview">
-                <div className="preview-window">
+                <div className="preview-window" aria-hidden="true">
+                  <div className="preview-head">
+                    <span className="preview-head-title">
+                      <span className="preview-head-dot" />
+                      Batch preview
+                    </span>
+                    <span className="preview-head-pill">Ready to send</span>
+                  </div>
                   <div className="preview-metrics">
                     <div className="preview-metric">
                       <span className="preview-metric-label">Recipients</span>
@@ -1854,7 +1870,7 @@ function App() {
                     </div>
                     <div className="preview-metric">
                       <span className="preview-metric-label">Total</span>
-                      <strong>14.32 ETH</strong>
+                      <strong>23 ETH</strong>
                     </div>
                   </div>
 
@@ -1873,8 +1889,12 @@ function App() {
                     </div>
                     <div className="preview-row muted">
                       <span className="preview-address">+181 more</span>
-                      <span className="preview-amount">Single tx</span>
+                      <span className="preview-amount">0.125 ETH each</span>
                     </div>
+                  </div>
+                  <div className="preview-foot">
+                    <span className="preview-send">Send to 184 wallets</span>
+                    <span className="preview-foot-note">1 transaction · 1 signature</span>
                   </div>
                 </div>
               </div>
@@ -2002,7 +2022,7 @@ function App() {
                     <img src="/logo-header.png" alt="" className="footer-logo" />
                     <span className="footer-name">MultiSend</span>
                   </div>
-                  <p className="footer-tagline">Batch native and ERC-20 transfers in one transaction.</p>
+                  <p className="footer-tagline">Batch native, ERC20, and SPL transfers in one transaction.</p>
                 </div>
                 <div className="footer-contracts">
                   <span className="footer-label" id="footer-contracts-label">Verified contracts</span>
@@ -2343,7 +2363,7 @@ function App() {
                       </div>
                       {useUsd && price && sameAmount && (
                         <div id="same-amount-conversion" className="conversion-hint">
-                          ≈ {(parseFloat(sameAmount) / price).toFixed(6)} {symbol} per recipient
+                          ≈ {formatAmount(parseFloat(sameAmount) / price)} {symbol} per recipient
                         </div>
                       )}
                       {usdPriceMissing && (
@@ -2592,7 +2612,7 @@ function App() {
                     </div>
                     <div className="sidebar-stat">
                       <span className="sidebar-stat-label">Total {symbol}</span>
-                      <span className="sidebar-stat-value">{totalAmount.toFixed(6)}</span>
+                      <span className="sidebar-stat-value">{formatAmount(totalAmount)}</span>
                     </div>
                     {price && (
                       <div className="sidebar-stat">
@@ -2657,13 +2677,13 @@ function App() {
                   </div>
                   <div className="confirmation-row">
                     <span className="confirmation-label">Total Amount</span>
-                    <span className="confirmation-value highlight">{pendingTx.total.toFixed(6)} {pendingTx.symbol}</span>
+                    <span className="confirmation-value highlight">{formatAmount(pendingTx.total)} {pendingTx.symbol}</span>
                   </div>
                   {pendingTx.usdMode && pendingTx.priceUsed ? (
                     <div className="confirmation-row">
                       <span className="confirmation-label">Conversion</span>
                       <span className="confirmation-value">
-                        ${pendingTx.usdTotal.toFixed(2)} → {pendingTx.total.toFixed(6)} {pendingTx.symbol} @ ${formatPrice(pendingTx.priceUsed)}/{pendingTx.symbol}
+                        ${pendingTx.usdTotal.toFixed(2)} → {formatAmount(pendingTx.total)} {pendingTx.symbol} @ ${formatPrice(pendingTx.priceUsed)}/{pendingTx.symbol}
                       </span>
                     </div>
                   ) : pendingTx.usdTotal ? (

@@ -17,6 +17,12 @@
  *   - className?: string
  */
 
+// Display-only: at most 6 decimals, trailing zeros dropped (0.850000 -> 0.85)
+const formatDisplay = (value) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? String(Number(num.toFixed(6))) : '0';
+};
+
 export function SummaryBar({
   recipientCount,
   totalAmount,
@@ -44,9 +50,22 @@ export function SummaryBar({
         <div className="sb-item sb-highlight">
           <span className="sb-label">Total {symbol}</span>
           <span className="sb-value">
-            {totalAmount.toFixed(6)}
+            {formatDisplay(totalAmount)}
           </span>
         </div>
+
+        {/* Average per recipient — only meaningful once there is a batch */}
+        {recipientCount > 0 && totalAmount > 0 && (
+          <>
+            <div className="sb-divider sb-optional"></div>
+            <div className="sb-item sb-optional">
+              <span className="sb-label">Avg / recipient</span>
+              <span className="sb-value">
+                {formatDisplay(totalAmount / recipientCount)}
+              </span>
+            </div>
+          </>
+        )}
 
         {/* USD Value (if available) */}
         {usdValue !== undefined && usdValue > 0 && (
@@ -61,10 +80,13 @@ export function SummaryBar({
           </>
         )}
 
+        {recipientCount === 0 && (
+          <span className="sb-hint">Add recipients to see your batch totals</span>
+        )}
+
         {/* Approval Required Badge */}
         {isApprovalRequired && (
           <>
-            <div className="sb-divider"></div>
             <div className="sb-badge sb-warning">
               <svg className="sb-badge-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
@@ -146,7 +168,15 @@ export function SummaryBar({
           background: var(--border-subtle);
         }
 
+        .sb-hint {
+          margin-left: auto;
+          font-size: 0.8125rem;
+          color: var(--text-muted);
+          white-space: nowrap;
+        }
+
         .sb-badge {
+          margin-left: auto;
           flex: none;
           display: flex;
           align-items: center;
@@ -201,6 +231,11 @@ export function SummaryBar({
 
           .sb-container {
             gap: var(--space-3);
+          }
+
+          .sb-optional,
+          .sb-hint {
+            display: none;
           }
 
           .sb-label {
