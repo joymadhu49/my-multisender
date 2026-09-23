@@ -124,7 +124,7 @@ export function RecipientInput({
       {/* Parse Warnings — persistently mounted live region so screen readers
           announce warnings as they appear */}
       <div className="ri-warnings" id={warningsId} role="status" aria-live="polite">
-        {parseWarnings.invalid > 0 && (
+        {parseDetails.length === 0 && parseWarnings.invalid > 0 && (
           <div className="ri-warning-item invalid">
             <svg className="ri-warning-icon" viewBox="0 0 24 24" fill="currentColor">
               <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
@@ -135,7 +135,7 @@ export function RecipientInput({
           </div>
         )}
 
-        {parseWarnings.duplicates > 0 && (
+        {parseDetails.length === 0 && parseWarnings.duplicates > 0 && (
           <div className="ri-warning-item duplicate">
             <svg className="ri-warning-icon" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z" />
@@ -144,6 +144,13 @@ export function RecipientInput({
               {parseWarnings.duplicates} duplicate {parseWarnings.duplicates === 1 ? 'address' : 'addresses'} removed
             </span>
           </div>
+        )}
+
+        {/* The details panel below replaces the pills; keep announcing it */}
+        {parseDetails.length > 0 && (
+          <span className="ri-sr-only">
+            {parseDetails.length} {parseDetails.length === 1 ? 'row' : 'rows'} will be skipped
+          </span>
         )}
       </div>
 
@@ -314,7 +321,17 @@ export function RecipientInput({
           height: 18px;
         }
 
+        .ri-sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+          white-space: nowrap;
+        }
+
         .ri-warnings {
+          position: relative;
           display: flex;
           flex-direction: column;
           gap: var(--space-2);
@@ -322,7 +339,8 @@ export function RecipientInput({
 
         /* Keep the empty live region in the accessibility tree without
            leaving a stray flex-gap slot in the layout */
-        .ri-warnings:empty {
+        .ri-warnings:empty,
+        .ri-warnings:has(> .ri-sr-only:only-child) {
           margin-top: calc(-1 * var(--space-3));
         }
 
@@ -492,30 +510,19 @@ export function RecipientInput({
             font-size: 1rem; /* >=16px prevents iOS Safari auto-zoom on focus */
           }
 
-          .quick-add-inputs {
+          /* Same mode: address + Add stay on one row.
+             Custom mode: address on its own row, amount + Add below. */
+          .quick-add-inputs,
+          .quick-add-inputs:has(.quick-add-amount) {
             grid-template-columns: 1fr auto;
           }
 
-          .quick-add-inputs:has(.quick-add-amount) {
-            grid-template-columns: 1fr;
+          .quick-add-inputs:has(.quick-add-amount) .quick-add-address {
+            grid-column: 1 / -1;
           }
 
           .quick-add-amount {
             max-width: none;
-            order: 2;
-          }
-
-          .quick-add-button {
-            grid-column: 1 / -1;
-            order: 3;
-          }
-
-          .quick-add-button span {
-            display: none;
-          }
-
-          .quick-add-button svg {
-            margin: 0;
           }
 
           .ri-warning-item {
