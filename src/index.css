@@ -123,6 +123,12 @@ html {
   overscroll-behavior-y: none;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
   font-family: var(--font-ui);
   background: var(--bg-base);
@@ -203,6 +209,32 @@ button {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+/* Homepage section links (desktop only) */
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin: 0 var(--space-6) 0 auto;
+}
+
+.header-nav a {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.header-nav a:hover {
+  color: var(--text-primary);
+}
+
+.header-nav a:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 4px;
+  border-radius: 2px;
 }
 
 .theme-toggle {
@@ -617,6 +649,18 @@ button {
   color: var(--text-muted);
 }
 
+.hero-actions-note a {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hero-actions-note a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .hero-stats {
   display: flex;
   gap: var(--space-8);
@@ -646,8 +690,22 @@ button {
 /* Hero preview — a small ledger card */
 
 .hero-preview {
+  position: relative;
+  isolation: isolate;
   display: flex;
   justify-content: flex-end;
+}
+
+.hero-preview::before {
+  content: '';
+  position: absolute;
+  inset: -48px -32px;
+  z-index: -1;
+  background-image: radial-gradient(circle, var(--border-strong) 1px, transparent 1.4px);
+  background-size: 18px 18px;
+  -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent);
+  mask-image: radial-gradient(closest-side, #000 30%, transparent);
+  pointer-events: none;
 }
 
 .preview-window {
@@ -882,43 +940,860 @@ button {
   max-width: 520px;
 }
 
-/* How it works */
+/* Section kicker (small label above a section title) */
+
+.section-kicker {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: var(--space-3);
+}
+
+/* Anchored sections clear the sticky header */
+.homepage section[id] {
+  scroll-margin-top: 72px;
+}
+
+/* How it works — animated flow demo (src/components/FlowDemo.jsx) */
 
 .how-section {
+  padding: var(--space-10) 0 var(--space-9);
+  border-top: 1px solid var(--border);
+}
+
+.flow-demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.flow-steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.flow-step {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: var(--space-2);
+  row-gap: var(--space-3);
+  padding: 0 0 var(--space-1);
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.flow-step:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.flow-step-bar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.flow-step-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--text-primary);
+}
+
+.flow-step.is-done .flow-step-fill {
+  width: 100%;
+}
+
+.flow-step.is-active .flow-step-fill {
+  width: 100%;
+  background: var(--accent);
+}
+
+.flow-step.is-active .flow-step-fill.is-running {
+  animation: flowFill var(--fd-dur) linear both;
+}
+
+.flow-step-num {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.flow-step-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  transition: color 0.15s ease;
+}
+
+.flow-step:hover .flow-step-title,
+.flow-step.is-active .flow-step-title {
+  color: var(--text-primary);
+}
+
+.flow-step.is-active .flow-step-num {
+  color: var(--accent);
+}
+
+/* Several messages share one grid cell; only the active one is visible,
+   so the container is always as tall as the longest — no layout jumps. */
+.flow-stack {
+  display: grid;
+}
+
+.flow-stack > * {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+
+.flow-stack > .is-active {
+  visibility: visible;
+}
+
+.flow-stage {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.flow-stage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.flow-status {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.flow-status-dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  margin-top: 0.42em;
+  border-radius: 50%;
+  background: var(--warning);
+  box-shadow: 0 0 0 3px var(--warning-muted);
+  animation: flowBlink 1.2s ease-in-out infinite;
+}
+
+.flow-status.is-done .flow-status-dot,
+.flow-demo.is-paused .flow-status-dot {
+  animation: none;
+}
+
+.flow-status.is-done .flow-status-dot {
+  background: var(--success);
+  box-shadow: 0 0 0 3px var(--success-muted);
+}
+
+.flow-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 10px;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.flow-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.flow-toggle:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.flow-toggle svg {
+  width: 11px;
+  height: 11px;
+}
+
+.flow-canvas {
+  padding: var(--space-6) var(--space-5) var(--space-4);
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1.4px);
+  background-size: 20px 20px;
+  background-position: center;
+}
+
+.flow-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.flow-svg--tall {
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.flow-caption {
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.flow-caption p {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 720px;
+  font-size: 0.9063rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.flow-caption-step {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.flow-footnote {
+  margin-top: var(--space-4);
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  max-width: 640px;
+}
+
+/* Diagram primitives */
+
+.flow-svg text {
+  font-family: var(--font-ui);
+}
+
+.flow-svg .fd-card {
+  fill: var(--bg-raised);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.flow-svg .fd-rule {
+  stroke: var(--border-subtle);
+}
+
+.flow-svg .fd-list-dot {
+  fill: var(--accent);
+}
+
+.flow-svg .fd-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--text-secondary);
+}
+
+.flow-svg .fd-meta {
+  font-size: 11.5px;
+  fill: var(--text-muted);
+}
+
+.flow-svg .fd-mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  fill: var(--text-secondary);
+}
+
+.flow-svg .fd-mono-amount {
+  fill: var(--text-primary);
+}
+
+.flow-svg .fd-arrow {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+}
+
+.flow-svg .fd-arrowhead {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.flow-svg .fd-tile {
+  fill: var(--accent-muted);
+}
+
+.flow-svg .fd-glyph {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.flow-svg .fd-title {
+  font-size: 14px;
+  font-weight: 600;
+  fill: var(--text-primary);
+}
+
+.flow-svg .fd-title--display {
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
+.flow-svg .fd-sub {
+  font-size: 12.5px;
+  fill: var(--text-muted);
+}
+
+/* Nodes: pending → active (accent outline + pulse ring) → done */
+
+.flow-svg .fd-node.is-pending {
+  opacity: 0.6;
+}
+
+.flow-svg .fd-node.is-active {
+  animation: fdFadeIn 0.3s ease-out both;
+}
+
+.flow-svg .fd-node.is-active .fd-node-box {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.flow-svg .fd-node.is-active .fd-sub {
+  fill: var(--accent);
+}
+
+.flow-svg .fd-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.flow-svg .fd-node.is-active .fd-ring {
+  animation: fdPulse 1.4s ease-out infinite;
+}
+
+.flow-demo.is-paused .fd-node.is-active .fd-ring {
+  animation-iteration-count: 1;
+}
+
+/* Step 1 — list rows type in */
+
+.flow-svg .fd-list.is-active .fd-row {
+  animation: fdRowIn 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-delay: calc(0.15s + var(--i) * 0.3s);
+}
+
+/* Step 2 — wallet prompt bubble */
+
+.flow-svg .fd-bubble {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.flow-svg .fd-bubble.is-active {
+  animation: fdPop 0.35s cubic-bezier(0.2, 0.8, 0.3, 1.2) both 0.15s;
+}
+
+.flow-svg .fd-bubble-box {
+  fill: var(--ink);
+}
+
+.flow-svg .fd-bubble-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--text-on-ink);
+}
+
+.flow-svg .fd-bubble-sub {
+  font-size: 11.5px;
+  fill: var(--text-on-ink);
+  opacity: 0.7;
+}
+
+.flow-svg .fd-bubble-ok {
+  opacity: 0;
+}
+
+/* The prompt flips from "Confirm" to "Signed" ~60% through the step,
+   in the bubble and on the wallet node together */
+.flow-svg .fd-bubble.is-active .fd-bubble-ask,
+.flow-svg .fd-node.is-active .fd-sub-ask {
+  animation: fdAsk var(--fd-dur) linear both;
+}
+
+.flow-svg .fd-bubble.is-active .fd-bubble-ok,
+.flow-svg .fd-node.is-active .fd-sub-ok {
+  animation: fdOk var(--fd-dur) linear both;
+}
+
+/* Step 3 — one transaction travels in, then fans out */
+
+.flow-svg .fd-guide {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1.25;
+  stroke-dasharray: 2 4;
+}
+
+.flow-svg .fd-wire {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0;
+}
+
+.flow-svg .fd-wires.is-active .fd-wire {
+  opacity: 1;
+  stroke-dasharray: 100;
+  animation: fdDraw 0.5s ease-out both;
+}
+
+.flow-svg .fd-wires.is-active .fd-wire--fan {
+  animation-duration: 0.55s;
+  animation-delay: calc(0.75s + var(--i) * 0.08s);
+}
+
+.flow-svg .fd-wires.is-done .fd-wire {
+  opacity: 0.45;
+  stroke-width: 1.75;
+}
+
+.flow-svg .fd-comet {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-dasharray: 10 110;
+  stroke-dashoffset: 12;
+  opacity: 0;
+}
+
+.flow-svg .fd-wires.is-active .fd-comet {
+  animation: fdComet 0.75s cubic-bezier(0.4, 0, 0.2, 1) both 0.1s;
+}
+
+.flow-svg .fd-wires.is-active .fd-comet--fan {
+  animation-duration: 0.7s;
+  animation-delay: calc(1s + var(--i) * 0.08s);
+}
+
+.flow-svg .fd-chip {
+  opacity: 0;
+}
+
+.flow-svg .fd-chip rect {
+  fill: var(--accent);
+}
+
+.flow-svg .fd-chip text {
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: var(--text-on-accent);
+}
+
+.flow-svg .fd-chip.is-active {
+  animation: fdPop 0.3s ease-out both 0.1s;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.flow-svg .fd-chip.is-done {
+  opacity: 1;
+}
+
+/* Step 3/4 — recipients light up, then tick off */
+
+.flow-svg .fd-rcpt {
+  opacity: 0.55;
+}
+
+.flow-svg .fd-avatar {
+  fill: var(--bg-elevated);
+  stroke: var(--border-strong);
+}
+
+.flow-svg .fd-amount {
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--text-muted);
+}
+
+.flow-svg .fd-check {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.flow-svg .fd-check-bg {
+  fill: var(--accent);
+}
+
+.flow-svg .fd-check-mark {
+  fill: none;
+  stroke: var(--text-on-accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.flow-svg .fd-rcpt.is-receiving {
+  animation: fdLight 0.3s ease-out both;
+  animation-delay: calc(1.6s + var(--i) * 0.08s);
+}
+
+.flow-svg .fd-rcpt.is-receiving .fd-rcpt-box {
+  animation: fdHit 0.9s ease-out both;
+  animation-delay: calc(1.6s + var(--i) * 0.08s);
+}
+
+.flow-svg .fd-rcpt.is-paid {
+  opacity: 1;
+}
+
+.flow-svg .fd-rcpt.is-paid .fd-rcpt-box {
+  stroke: var(--border-focus);
+}
+
+.flow-svg .fd-rcpt.is-paid .fd-check {
+  animation: fdPop 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.3) both;
+  animation-delay: calc(0.15s + var(--i) * 0.12s);
+}
+
+.flow-svg .fd-rcpt.is-paid .fd-amount {
+  fill: var(--accent);
+}
+
+.flow-svg .fd-receipt {
+  opacity: 0;
+}
+
+.flow-svg .fd-receipt rect {
+  fill: var(--bg-raised);
+  stroke: var(--accent);
+}
+
+.flow-svg .fd-receipt text {
+  font-size: 12.5px;
+  font-weight: 600;
+  fill: var(--accent);
+}
+
+.flow-svg .fd-receipt.is-active {
+  animation: fdRise 0.45s ease-out both 1s;
+}
+
+/* Narrow drawing: a little larger type so it stays legible once scaled */
+
+.flow-svg--tall .fd-mono {
+  font-size: 13px;
+}
+
+.flow-svg--tall .fd-mono--tiny,
+.flow-svg--tall .fd-amount--tiny {
+  font-size: 12px;
+}
+
+.flow-svg--tall .fd-title {
+  font-size: 15px;
+}
+
+.flow-svg--tall .fd-title--display {
+  font-size: 17px;
+}
+
+.flow-svg--tall .fd-sub,
+.flow-svg--tall .fd-label {
+  font-size: 13px;
+}
+
+@keyframes flowFill {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes flowBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes fdFadeIn {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+@keyframes fdRowIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fdPulse {
+  0% { opacity: 0.75; transform: scale(0.98); }
+  100% { opacity: 0; transform: scale(1.07); }
+}
+
+@keyframes fdPop {
+  0% { opacity: 0; transform: scale(0.6); }
+  70% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fdAsk {
+  0%, 55% { opacity: 1; }
+  62%, 100% { opacity: 0; }
+}
+
+@keyframes fdOk {
+  0%, 60% { opacity: 0; }
+  68%, 100% { opacity: 1; }
+}
+
+@keyframes fdDraw {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fdComet {
+  0% { stroke-dashoffset: 12; opacity: 0; }
+  12% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { stroke-dashoffset: -100; opacity: 0; }
+}
+
+@keyframes fdLight {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+@keyframes fdHit {
+  0% { stroke: var(--border); stroke-width: 1; }
+  25% { stroke: var(--accent); stroke-width: 2; }
+  100% { stroke: var(--border-focus); stroke-width: 1; }
+}
+
+@keyframes fdRise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Why batch — one-by-one vs MultiSend (src/components/BatchCompare.jsx) */
+
+.compare-section {
   padding: var(--space-10) 0;
   border-top: 1px solid var(--border);
 }
 
-.steps-row {
+.compare {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-6);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
 }
 
-.step-card {
-  border-top: 2px solid var(--text-primary);
-  padding-top: var(--space-4);
+.compare-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--space-6);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
 }
 
-.step-number {
+.compare-card.is-better {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 4px var(--accent-muted);
+}
+
+.compare-kicker {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.compare-card.is-better .compare-kicker {
+  color: var(--accent);
+}
+
+.compare-head h3 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 550;
+  color: var(--text-primary);
+  margin: var(--space-1) 0 var(--space-5);
+}
+
+.compare-txs,
+.compare-batch {
+  flex: 1;
+}
+
+.compare-txs {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.compare-tx {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 7px var(--space-3);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.compare-tx-id {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--text-muted);
-  margin-bottom: var(--space-3);
 }
 
-.step-card h3 {
-  font-size: 1rem;
+.compare-tx-addr {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compare-tx-sign {
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--space-2);
-  line-height: 1.4;
+  color: var(--warning);
+  background: var(--warning-muted);
+  border-radius: var(--radius-full);
+  padding: 2px var(--space-2);
 }
 
-.step-desc {
+.compare-tx.is-batch {
+  background: var(--accent-muted);
+  border-color: var(--border-focus);
+}
+
+.compare-tx.is-batch .compare-tx-id,
+.compare-tx.is-batch .compare-tx-addr {
+  color: var(--text-primary);
+}
+
+.compare-tx.is-batch .compare-tx-sign {
+  color: var(--text-on-accent);
+  background: var(--accent);
+}
+
+.compare-tree {
+  list-style: none;
+  margin: 0 0 0 26px;
+  padding: 4px 0 0 var(--space-4);
+  border-left: 1px dashed var(--border-strong);
+}
+
+.compare-tree li {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 5px var(--space-3) 5px 0;
+}
+
+.compare-tree li::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-4));
+  top: 50%;
+  width: 10px;
+  border-top: 1px dashed var(--border-strong);
+}
+
+.compare-tree-amt {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.compare-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.compare-stats div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+
+.compare-stats dt {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.compare-stats dd {
+  font-family: var(--font-display);
+  font-size: 1.625rem;
+  font-weight: 550;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.compare-card.is-better .compare-stats dd {
+  color: var(--accent);
+}
+
+.compare-note {
+  grid-column: 1 / -1;
+  max-width: 640px;
   font-size: 0.875rem;
-  color: var(--text-tertiary);
   line-height: 1.6;
+  color: var(--text-tertiary);
 }
 
 /* Features */
@@ -2518,6 +3393,12 @@ button {
    Responsive
    ------------------------------------------------------------ */
 
+@media (max-width: 900px) {
+  .header-nav {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .hero-grid {
     grid-template-columns: 1fr;
@@ -2526,6 +3407,11 @@ button {
 
   .hero-preview {
     justify-content: flex-start;
+  }
+
+  /* Stacked hero: keep the dotted halo inside the page gutter */
+  .hero-preview::before {
+    inset: -32px 0;
   }
 
   .dashboard-layout {
@@ -2541,9 +3427,13 @@ button {
 }
 
 @media (max-width: 768px) {
-  .steps-row {
+  .flow-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--space-5);
+  }
+
+  .compare {
     grid-template-columns: 1fr;
-    gap: var(--space-6);
   }
 
   .feature-grid {
@@ -2675,6 +3565,20 @@ button {
   .footer-bottom {
     flex-direction: column;
     gap: var(--space-2);
+  }
+
+  .flow-stage-head,
+  .flow-caption {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+
+  .flow-canvas {
+    padding: var(--space-5) var(--space-3) var(--space-3);
+  }
+
+  .compare-card {
+    padding: var(--space-5);
   }
 }
 

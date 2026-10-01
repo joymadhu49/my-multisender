@@ -21,6 +21,8 @@ import SummaryBar from './components/SummaryBar'
 import ModeSelector from './components/ModeSelector'
 import RecipientInput from './components/RecipientInput'
 import ApprovalCard from './components/ApprovalCard'
+import FlowDemo from './components/FlowDemo'
+import BatchCompare from './components/BatchCompare'
 
 // Parse blockchain errors into user-friendly messages
 const parseError = (err) => {
@@ -1614,23 +1616,6 @@ function App() {
     { value: '0%', label: 'Platform fee' },
     { value: `Up to ${APP_CONFIG.MAX_RECIPIENTS}`, label: 'Recipients per batch' },
   ]
-  const workflowSteps = [
-    {
-      step: '01',
-      title: 'Connect and pick an asset',
-      description: 'Bring in your wallet, choose the active network, and decide between native token or token payouts (ERC20 on EVM chains, SPL on Solana).',
-    },
-    {
-      step: '02',
-      title: 'Paste recipients or build them inline',
-      description: 'Use one address per line for equal payouts or address + amount pairs for custom distribution.',
-    },
-    {
-      step: '03',
-      title: 'Review totals and send once',
-      description: 'See approval state, recipient count, total value, and explorer details before submitting one transaction.',
-    },
-  ]
   const featureCards = [
     {
       title: 'Review-first sending flow',
@@ -1706,6 +1691,14 @@ function App() {
           <img src="/logo-header.png" alt="" className="logo-img" />
           <span>MultiSend</span>
         </a>
+        {!account && !entered && (
+          <nav className="header-nav" aria-label="Page sections">
+            <a href="#how-it-works">How it works</a>
+            <a href="#why-batch">Why batch</a>
+            <a href="#contracts">Contracts</a>
+            <a href="#faq">FAQ</a>
+          </nav>
+        )}
         <div className="header-right">
           {/* Theme Toggle Button */}
           <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
@@ -1842,7 +1835,9 @@ function App() {
                     {loading ? 'Connecting…' : 'Connect wallet'}
                   </button>
                 </div>
-                <p className="hero-actions-note">No wallet needed to explore — connect only when you send.</p>
+                <p className="hero-actions-note">
+                  No wallet needed to explore — connect only when you send. <a href="#how-it-works">See how it works ↓</a>
+                </p>
 
                 <div className="hero-stats">
                   {heroStats.map((stat) => (
@@ -1923,17 +1918,22 @@ function App() {
             </section>
 
             <section className="how-section" id="how-it-works">
-              <h2 className="section-title">How it works</h2>
-              <p className="section-subtitle">Three steps from a list of addresses to a single on-chain transaction.</p>
-              <div className="steps-row">
-                {workflowSteps.map((item) => (
-                  <div key={item.step} className="step-card">
-                    <div className="step-number">{item.step}</div>
-                    <h3>{item.title}</h3>
-                    <p className="step-desc">{item.description}</p>
-                  </div>
-                ))}
-              </div>
+              <span className="section-kicker">How it works</span>
+              <h2 className="section-title">One signature. Every wallet paid.</h2>
+              <p className="section-subtitle">
+                Watch a six-wallet payout go from a pasted list to confirmed — in a single on-chain transaction.
+              </p>
+              <FlowDemo />
+              <p className="flow-footnote">
+                On Solana there’s no contract step: transfers are packed into as few transactions as possible and signed in one wallet prompt where your wallet supports it.
+              </p>
+            </section>
+
+            <section className="compare-section" id="why-batch">
+              <span className="section-kicker">Why batch</span>
+              <h2 className="section-title">Six payouts, two ways</h2>
+              <p className="section-subtitle">The same six transfers, sent the usual way and sent through MultiSend.</p>
+              <BatchCompare />
             </section>
 
             <section className="feature-grid-section">
@@ -1977,7 +1977,7 @@ function App() {
               </div>
             </section>
 
-            <section className="faq-section">
+            <section className="faq-section" id="faq">
               <h2 className="section-title">FAQ</h2>
               <p className="section-subtitle">Answers to the questions people ask before their first batch send.</p>
               <div className="faq-list">
